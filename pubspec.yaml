@@ -14,6 +14,7 @@ dependencies:
   # --- Iconos ---
   cupertino_icons: ^1.0.8
   font_awesome_flutter: ^10.7.0
+  google_sign_in: ^6.2.1
 
   # --- Comunicación con Backend ---
   dio: ^5.4.1                # El 'requests' de Flutter, más potente y con interceptores

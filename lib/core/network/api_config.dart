@@ -18,7 +18,7 @@ class ApiConfig {
   // Quitamos "/auth" y agregamos el "/" al final para que coincida con tu prueba exitosa
   static const String login = "/login/"; 
   static const String register = "/register"; 
-  static const String googleLogin = "/google/";
+  static const String googleMobileSignin = "/auth/google/mobile-signin";
 
   /// Método para construir la URL completa
   static String getFullUrl(String endpoint) {

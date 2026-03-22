@@ -54,6 +54,10 @@ android/key.properties
 *.keystore
 *.jks
 
+# Google Cloud / OAuth Credentials
+client_secret_*.json
+google-services.json
+
 # Flutter/Dart/Pub related
 .dart_tool/
 .flutter-plugins-dependencies

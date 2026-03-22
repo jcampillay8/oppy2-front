@@ -1,13 +1,19 @@
 // lib/providers/auth_provider.dart
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
 
-// 1. Añadimos el estado 'emailConfirmed' para el feedback visual
 enum AuthStatus { authenticated, unauthenticated, authenticating, emailConfirmed, error }
 
-class AuthProvider extends ChangeNotifier {
+class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
+  
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    // ✅ COPIA Y PEGA EL ID DEL JSON WEB AQUÍ:
+    serverClientId: "234259540741-hv5m3meib6pav7qsufbb8lpku5eto7ft.apps.googleusercontent.com",
+    scopes: ['email', 'profile'],
+  );
   
   AuthStatus _status = AuthStatus.unauthenticated;
   UserModel? _user;
@@ -18,55 +24,41 @@ class AuthProvider extends ChangeNotifier {
   UserModel? get user => _user;
   String? get errorMessage => _errorMessage;
 
-  // --- NUEVO: Método para el Deep Link de main.dart ---
-  // Esto permitirá que la UI reaccione cuando el usuario confirme su correo
-  void markEmailAsConfirmed() {
-    _status = AuthStatus.emailConfirmed;
-    _errorMessage = null;
-    notifyListeners(); 
-  }
-
-  // --- 1. LOGIN CON JWT (Botón "Iniciar Sesión") ---
+  // --- 1. LOGIN MANUAL ---
   Future<bool> login(String username, String password) async {
     _setAuthenticating();
-
     try {
       final success = await _authService.login(username, password);
-
       if (success) {
-        // CAMBIO CRÍTICO: Aseguramos que el estado cambie a authenticated
         _status = AuthStatus.authenticated;
-        
-        // TODO: Cargar el perfil del usuario desde Neon
-        // _user = await _authService.getUserProfile();
-        
-        notifyListeners(); // Esto disparará el Consumer en main.dart y mostrará el HomeScreen
+        notifyListeners();
         return true;
       } else {
-        _setUnauthenticated("Credenciales incorrectas o cuenta no activa.");
+        _setUnauthenticated("Credenciales incorrectas.");
         return false;
       }
     } catch (e) {
-      _setUnauthenticated("Error de conexión con el servidor.");
+      _setUnauthenticated("Error de conexión.");
       return false;
     }
   }
 
-  // --- 2. REGISTRO ---
+  // --- 2. REGISTRO MANUAL ---
   Future<bool> register(String email, String password, String username) async {
     _setAuthenticating();
-
-    final success = await _authService.register(email, password, username);
-
-    if (success) {
-      // Importante: No hacemos login automático si el backend requiere 
-      // confirmación de email, porque el login daría 401 hasta que confirme.
-      _status = AuthStatus.unauthenticated; 
-      _errorMessage = "Registro exitoso. Por favor verifica tu email.";
-      notifyListeners();
-      return true;
-    } else {
-      _setUnauthenticated("El registro falló. ¿Quizás el email ya existe?");
+    try {
+      final success = await _authService.register(email, password, username);
+      if (success) {
+        _status = AuthStatus.unauthenticated; 
+        _errorMessage = "Verifica tu email.";
+        notifyListeners();
+        return true;
+      } else {
+        _setUnauthenticated("El registro falló.");
+        return false;
+      }
+    } catch (e) {
+      _setUnauthenticated("Error en el registro.");
       return false;
     }
   }
@@ -74,20 +66,47 @@ class AuthProvider extends ChangeNotifier {
   // --- 3. GOOGLE OAUTH2 ---
   Future<bool> loginWithGoogle() async {
     _setAuthenticating();
-    
-    final success = await _authService.signInWithGoogle();
+    try {
+      await _googleSignIn.signOut();
+      
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        print("DEBUG: El usuario cerró la ventana de Google.");
+        _status = AuthStatus.unauthenticated;
+        notifyListeners();
+        return false;
+      }
 
-    if (success) {
-      _status = AuthStatus.authenticated;
-      notifyListeners();
-      return true;
-    } else {
-      _setUnauthenticated("Error con la cuenta de Google.");
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      // ✅ AJUSTE: Corregida la sintaxis del print para evitar errores de compilación
+      if (idToken != null) {
+        print("DEBUG: idToken obtenido correctamente.");
+        print("DEBUG: Enviando token al backend OppyChat...");
+        
+        final bool success = await _authService.signInWithGoogle(idToken);
+        
+        if (success) {
+          _status = AuthStatus.authenticated;
+          notifyListeners();
+          return true;
+        }
+      } else {
+        print("DEBUG: idToken es NULL. Revisa el serverClientId.");
+      }
+      
+      _setUnauthenticated("Error al sincronizar con Google o token nulo.");
+      return false;
+    } catch (e) {
+      print("DEBUG: Error fatal en loginWithGoogle: $e");
+      _setUnauthenticated("Error de Google: $e");
       return false;
     }
   }
 
-  // --- Métodos de Ayuda Internos ---
+  // --- Helpers ---
   void _setAuthenticating() {
     _status = AuthStatus.authenticating;
     _errorMessage = null;
@@ -100,10 +119,21 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void markEmailAsConfirmed() {
+    _status = AuthStatus.emailConfirmed;
+    notifyListeners(); 
+  }
+
   Future<void> logout() async {
-    await _authService.logout(); 
-    _status = AuthStatus.unauthenticated;
-    _user = null;
-    notifyListeners();
+    try {
+      await _googleSignIn.signOut();
+      await _authService.logout();
+    } catch (e) {
+      print("Error durante el logout: $e");
+    } finally {
+      _status = AuthStatus.unauthenticated;
+      _user = null;
+      notifyListeners();
+    }
   }
 }
