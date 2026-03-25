@@ -1,4 +1,4 @@
-// lib/core/app_theme.dart
+// lib/core/theme/app_theme.dart
 import 'package:flutter/material.dart';
 
 class AppColors {

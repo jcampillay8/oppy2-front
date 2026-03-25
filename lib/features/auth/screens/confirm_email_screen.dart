@@ -1,7 +1,7 @@
 // lib/screens/confirm_email_screen.dart
 import 'package:flutter/material.dart';
-import 'package:oppychat/core/app_theme.dart';
-import 'package:oppychat/services/auth_service.dart';
+import 'package:oppy2_frontend/core/app_theme.dart';
+import 'package:oppy2_frontend/services/auth_service.dart';
 
 class ConfirmEmailScreen extends StatefulWidget {
   final String token;

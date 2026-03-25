@@ -1,8 +1,8 @@
-// lib/widgets/register_form.dart
+// lib/features/auth/widgets/register_form.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import '../core/app_theme.dart';
+import 'package:oppy2_frontend/features/auth/providers/auth_provider.dart';
+import 'package:oppy2_frontend/core/theme/app_theme.dart';
 
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});

@@ -1,11 +1,11 @@
-// lib/screens/welcome_screen.dart
+// lib/features/auth/screens/welcome_screen.dart
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
-import '../core/app_theme.dart';
-import '../providers/auth_provider.dart';
-import '../widgets/register_form.dart'; 
-import '../widgets/login_form.dart';    
+import 'package:oppy2_frontend/core/theme/app_theme.dart';
+import 'package:oppy2_frontend/features/auth/providers/auth_provider.dart';
+import 'package:oppy2_frontend/features/auth/widgets/register_form.dart'; 
+import 'package:oppy2_frontend/features/auth/widgets/login_form.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});

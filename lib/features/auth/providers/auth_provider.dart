@@ -1,8 +1,8 @@
-// lib/providers/auth_provider.dart
+// lib/features/auth/providers/auth_provider.dart
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../services/auth_service.dart';
-import '../models/user_model.dart';
+import 'package:oppy2_frontend/features/auth/services/auth_service.dart';
+import 'package:oppy2_frontend/core/shared_models/user_model.dart';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating, emailConfirmed, error }
 
@@ -89,9 +89,18 @@ class AuthProvider with ChangeNotifier {
         final bool success = await _authService.signInWithGoogle(idToken);
         
         if (success) {
-          _status = AuthStatus.authenticated;
-          notifyListeners();
-          return true;
+          // 1. Antes de cambiar el estado, obtenemos el perfil fresco
+          final userData = await _authService.checkNavigationFlow();
+          
+          if (userData != null) {
+            // Si tienes un modelo de usuario, cárgalo aquí
+            // _user = UserModel.fromJson(userData); 
+            
+            // 2. Ahora sí, cambiamos el estado
+            _status = AuthStatus.authenticated;
+            notifyListeners();
+            return true;
+          }
         }
       } else {
         print("DEBUG: idToken es NULL. Revisa el serverClientId.");

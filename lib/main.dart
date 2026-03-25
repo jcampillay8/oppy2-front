@@ -1,18 +1,29 @@
+// lib/main.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app_links/app_links.dart';
-import 'package:oppy2_frontend/core/app_theme.dart';
-import 'package:oppy2_frontend/screens/welcome_screen.dart';
-import 'package:oppy2_frontend/screens/home_screen.dart';
-import 'package:oppy2_frontend/providers/auth_provider.dart';
-import 'package:oppy2_frontend/services/auth_service.dart';
+
+// Importaciones de Core
+import 'package:oppy2_frontend/core/theme/app_theme.dart';
+
+// Importaciones de Features (Auth)
+import 'package:oppy2_frontend/features/auth/providers/auth_provider.dart';
+import 'package:oppy2_frontend/features/auth/services/auth_service.dart';
+import 'package:oppy2_frontend/features/auth/screens/welcome_screen.dart';
+
+// Importaciones de Features (Home)
+import 'package:oppy2_frontend/features/home/screens/home_screen.dart';
+import 'package:oppy2_frontend/features/onboarding/screens/onboarding_screen.dart';
+// Busca la sección de imports y agrega esta línea:
+import 'package:oppy2_frontend/features/placement_test/providers/placement_test_provider.dart';
 
 void main() {
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => PlacementTestProvider()),
       ],
       child: const OppyApp(),
     ),
@@ -122,24 +133,63 @@ class _OppyAppState extends State<OppyApp> {
     super.dispose();
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: _navigatorKey, // Asignamos la llave aquí
+      navigatorKey: _navigatorKey,
       title: 'OppyChat',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: Consumer<AuthProvider>(
         builder: (context, auth, _) {
-          if (auth.status == AuthStatus.authenticated) {
-            return const HomeScreen();
+          // 1. Si NO está autenticado, directo al Welcome
+          if (auth.status != AuthStatus.authenticated) {
+            return const WelcomeScreen();
           }
-          return const WelcomeScreen();
-        },
+
+          // 2. Si ESTÁ autenticado, consultamos el flujo al Backend
+          return FutureBuilder<Map<String, dynamic>?>(
+            future: _authService.checkNavigationFlow(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  backgroundColor: AppColors.backgroundDark,
+                  body: Center(child: CircularProgressIndicator(color: AppColors.primaryBlue)),
+                );
+              }
+
+              // Si hay error o no hay datos, por seguridad al inicio del onboarding
+              if (snapshot.hasError || !snapshot.hasData) {
+                return const OnboardingScreen(initialStep: 1);
+              }
+
+              final data = snapshot.data!;
+              final String? occupation = data['occupation'];
+              final String? bio = data['bio'];
+              final bool hasTest = data['has_test'] ?? false;
+              final int currentStep = data['current_step'] ?? 1;
+
+              // FILTRO 1: ¿Faltan datos de perfil? (Nombre, Ocupación o Bio)
+              if (currentStep < 4) {
+                return OnboardingScreen(initialStep: currentStep);
+              }
+
+              // FILTRO 2: ¿Falta el test diagnóstico?
+              if (!hasTest) {
+                return const OnboardingScreen(initialStep: 4); 
+              }
+
+              // Si pasó ambos filtros, bienvenido al Home
+              return const HomeScreen();
+            }, // Cierre builder FutureBuilder
+          );
+        }, // Cierre builder Consumer
       ),
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
         '/home': (context) => const HomeScreen(),
+        '/onboarding': (context) => const OnboardingScreen(),
+        // '/test-diagnostico': (context) => const PlacementTestScreen(), 
       },
     );
   }
