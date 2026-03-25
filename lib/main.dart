@@ -17,6 +17,8 @@ import 'package:oppy2_frontend/features/home/screens/home_screen.dart';
 import 'package:oppy2_frontend/features/onboarding/screens/onboarding_screen.dart';
 // Busca la sección de imports y agrega esta línea:
 import 'package:oppy2_frontend/features/placement_test/providers/placement_test_provider.dart';
+import 'package:oppy2_frontend/features/placement_test/screens/language_selection_screen.dart';
+import 'package:oppy2_frontend/features/placement_test/screens/test_intro_screen.dart';
 
 void main() {
   runApp(
@@ -189,7 +191,8 @@ class _OppyAppState extends State<OppyApp> {
         '/welcome': (context) => const WelcomeScreen(),
         '/home': (context) => const HomeScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
-        // '/test-diagnostico': (context) => const PlacementTestScreen(), 
+        '/select-language': (context) => LanguageSelectionScreen(), // <--- SIN CONST
+        '/test-diagnostico': (context) => TestIntroScreen(),      // <--- SIN CONST
       },
     );
   }

@@ -1,5 +1,6 @@
 // lib/features/auth/services/auth_service.dart
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart'; // Para debugPrint
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:oppy2_frontend/core/network/api_config.dart';
 
@@ -14,36 +15,62 @@ class AuthService {
 
   final _storage = const FlutterSecureStorage();
 
-  // --- NUEVO: CONSULTAR FLUJO DE NAVEGACIÓN ---
-  // Este método decide si el usuario va a Vista 1, 2, 3, 4 o Home
-Future<Map<String, dynamic>?> checkNavigationFlow() async {
-  try {
-    final String url = ApiConfig.getFullUrl('/onboarding/status');
-    final token = await _storage.read(key: 'access_token');
-    
-    // Si no hay token, ni siquiera intentamos la petición
-    if (token == null) return null;
+  // --- NUEVO: ACTUALIZAR IDIOMA DEL TEST ---
+  Future<bool> updateTargetLanguage(String langCode) async {
+    try {
+      // AGREGAMOS /onboarding ANTES DE /select-language
+      final String url = ApiConfig.getFullUrl('/onboarding/select-language'); 
+      
+      final token = await _storage.read(key: 'access_token');
+      if (token == null) return false;
 
-    final response = await _dio.get(
-      url,
-      options: Options(
-        headers: {
-          'Authorization': 'Bearer $token', // 👈 Indispensable para evitar el 401
+      final response = await _dio.post(
+        url,
+        data: {
+          "target_language": langCode,
         },
-      ),
-    );
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
 
-    if (response.statusCode == 200) {
-      return response.data; 
+      return response.statusCode == 200;
+    } catch (e) {
+      _handleError(e);
+      return false;
     }
-    return null;
-  } catch (e) {
-    _handleError(e);
-    return null;
   }
-}
 
-  // --- NUEVO: ACTUALIZAR PERFIL (Vistas 1, 2 y 3) ---
+  // --- CONSULTAR FLUJO DE NAVEGACIÓN ---
+  Future<Map<String, dynamic>?> checkNavigationFlow() async {
+    try {
+      final String url = ApiConfig.getFullUrl('/onboarding/status');
+      final token = await _storage.read(key: 'access_token');
+      
+      if (token == null) return null;
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; 
+      }
+      return null;
+    } catch (e) {
+      _handleError(e);
+      return null;
+    }
+  }
+
+  // --- ACTUALIZAR PERFIL (Vistas 1, 2 y 3) ---
   Future<bool> updateOnboardingProfile({
     required String username,
     required String occupation,
@@ -70,7 +97,7 @@ Future<Map<String, dynamic>?> checkNavigationFlow() async {
     }
   }
 
-  // --- 1. REGISTRO (Sin cambios) ---
+  // --- REGISTRO ---
   Future<bool> register(String email, String password, String username) async {
     try {
       final String url = ApiConfig.getFullUrl(ApiConfig.register); 
@@ -90,7 +117,7 @@ Future<Map<String, dynamic>?> checkNavigationFlow() async {
     }
   }
 
-  // --- 2. CONFIRMACIÓN DE EMAIL (Sin cambios) ---
+  // --- CONFIRMACIÓN DE EMAIL ---
   Future<bool> confirmEmail(String token) async {
     try {
       final String url = "${ApiConfig.baseUrl}/confirm-email/$token";
@@ -102,7 +129,7 @@ Future<Map<String, dynamic>?> checkNavigationFlow() async {
     }
   }
 
-  // --- 3. LOGIN (Actualizado con persistencia de Header) ---
+  // --- LOGIN ---
   Future<bool> login(String username, String password) async {
     try {
       final String url = ApiConfig.getFullUrl(ApiConfig.login);
@@ -115,7 +142,6 @@ Future<Map<String, dynamic>?> checkNavigationFlow() async {
         await _storage.write(key: 'access_token', value: accessToken);
         await _storage.write(key: 'refresh_token', value: refreshToken);
         
-        // Seteamos el header por defecto para esta instancia de Dio
         _dio.options.headers['Authorization'] = 'Bearer $accessToken';
         return true;
       }
@@ -126,7 +152,7 @@ Future<Map<String, dynamic>?> checkNavigationFlow() async {
     }
   }
 
-  // --- 4. GOOGLE SIGN IN (Sin cambios) ---
+  // --- GOOGLE SIGN IN ---
   Future<bool> signInWithGoogle(String idToken) async {
     try {
       final String url = ApiConfig.getFullUrl(ApiConfig.googleMobileSignin); 
@@ -149,7 +175,7 @@ Future<Map<String, dynamic>?> checkNavigationFlow() async {
     }
   }
 
-  // --- 5. LOGOUT ---
+  // --- LOGOUT ---
   Future<void> logout() async {
     await _storage.deleteAll();
     _dio.options.headers.remove('Authorization');
@@ -157,11 +183,11 @@ Future<Map<String, dynamic>?> checkNavigationFlow() async {
 
   void _handleError(dynamic e) {
     if (e is DioException) {
-      print("--- Error Backend OppyChat ---");
-      print("Status: ${e.response?.statusCode}");
-      print("Data: ${e.response?.data}");
+      debugPrint("--- Error Backend OppyChat ---");
+      debugPrint("Status: ${e.response?.statusCode}");
+      debugPrint("Data: ${e.response?.data}");
     } else {
-      print("Error Inesperado: $e");
+      debugPrint("Error Inesperado: $e");
     }
   }
 }

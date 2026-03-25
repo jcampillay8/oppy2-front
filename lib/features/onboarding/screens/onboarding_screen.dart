@@ -255,7 +255,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildVista4() {
+Widget _buildVista4() {
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Column(
@@ -267,7 +267,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
           const Text(
-            "Tu perfil ha sido creado. Vamos a evaluar tu nivel de inglés.",
+            "Tu perfil ha sido creado. Ahora, elige el idioma que quieres aprender.",
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.textGrey, fontSize: 18),
           ),
@@ -276,13 +276,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             width: double.infinity,
             height: 60,
             child: ElevatedButton(
-              onPressed: () => Navigator.pushReplacementNamed(context, '/test-diagnostico'),
+              onPressed: () => Navigator.pushReplacementNamed(context, '/select-language'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: AppColors.backgroundDark,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
-              child: const Text("Empezar Test Diagnóstico", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: const Text("Continuar", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
