@@ -1,67 +1,43 @@
 // lib/features/placement_test/services/placement_test_service.dart
-import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/network/api_config.dart';
-import '../models/writing_topic_model.dart';
+import 'package:oppy2_frontend/core/network/api_client.dart';
+import '../models/writing_models.dart';
 
 class PlacementTestService {
-  final ApiClient _apiClient = ApiClient();
+  final ApiClient _apiClient;
 
-  /// 1. Obtener el tema asignado o uno nuevo (PASO 1)
-  /// Endpoint: POST /onboarding/writing/setup
-  Future<WritingTopic> getWritingTopic({
-    required String category,
-    required String language,
-  }) async {
+  PlacementTestService(this._apiClient);
+
+  /// Obtiene la pregunta de Writing desde el backend
+  Future<WritingQuestion> getQuestion() async {
     try {
-      final response = await _apiClient.dio.post(
-        '/onboarding/writing/setup',
-        data: {
-          'category': category,
-          'target_language': language,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        return WritingTopic.fromJson(response.data);
+      final response = await _apiClient.dio.get('/onboarding/writing/question');
+      
+      if (response.data != null) {
+        return WritingQuestion.fromJson(response.data);
       } else {
-        throw Exception('Error al obtener el tema de escritura');
+        throw Exception("No se recibió información de la pregunta.");
       }
-    } on DioException catch (e) {
-      debugPrint("DioError en setup: ${e.response?.data ?? e.message}");
-      rethrow;
+    } catch (e) {
+      rethrow; 
     }
   }
 
-  /// 2. Enviar el texto para evaluación por IA (PASO 2)
-  /// Endpoint: POST /onboarding/writing/evaluate
-  Future<double> evaluateWriting({
-    required String text,
-    required String language,
-  }) async {
+  /// Envía la respuesta para ser evaluada por la IA
+  Future<Map<String, dynamic>> evaluateWriting(String answer, String lang) async {
     try {
-      // 💡 TIP: Sobreescribimos el timeout a 45 segundos solo para esta llamada,
-      // ya que Gemini analizando gramática y vocabulario puede demorar.
-      final response = await _apiClient.dio.post(
-        '/onboarding/writing/evaluate',
-        data: {
-          'text': text,
-          'target_language': language,
-        },
-        options: Options(
-          receiveTimeout: const Duration(seconds: 45), 
-        ),
-      );
+      // Print para verificar en consola antes de que salga el request
+      print("DEBUG: Enviando a evaluación -> Idioma: $lang, Longitud: ${answer.length}");
 
-      if (response.statusCode == 200) {
-        // Tu backend devuelve: {"status": "success", "score": float}
-        return (response.data['score'] as num).toDouble();
-      } else {
-        throw Exception('Error en la evaluación de la IA');
-      }
-    } on DioException catch (e) {
-      debugPrint("DioError en evaluate: ${e.response?.data ?? e.message}");
+      final response = await _apiClient.dio.post(
+        '/onboarding/writing/evaluate', 
+        data: {
+          'user_answer': answer,    // Contenido del texto largo
+          'target_language': lang,  // 'en' o 'es'
+        },
+      );
+      
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
       rethrow;
     }
   }

@@ -1,7 +1,8 @@
 // lib/main.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // <--- AÑADIR ESTO
+import 'package:provider/provider.dart' as legacy;
 import 'package:app_links/app_links.dart';
 
 // Importaciones de Core
@@ -16,22 +17,23 @@ import 'package:oppy2_frontend/features/auth/screens/welcome_screen.dart';
 import 'package:oppy2_frontend/features/home/screens/home_screen.dart';
 import 'package:oppy2_frontend/features/onboarding/screens/onboarding_screen.dart';
 // Busca la sección de imports y agrega esta línea:
-import 'package:oppy2_frontend/features/placement_test/providers/placement_test_provider.dart';
+import 'package:oppy2_frontend/features/placement_test/providers/writing_test_provider.dart'; 
+import 'package:oppy2_frontend/features/placement_test/screens/writing_test_screen.dart'; // <--- AÑADIR ESTO
 import 'package:oppy2_frontend/features/placement_test/screens/language_selection_screen.dart';
 import 'package:oppy2_frontend/features/placement_test/screens/test_intro_screen.dart';
 
 void main() {
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => PlacementTestProvider()),
-      ],
-      child: const OppyApp(),
+    ProviderScope( // De Riverpod
+      child: legacy.MultiProvider( // Usamos el alias legacy
+        providers: [
+          legacy.ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ],
+        child: const OppyApp(),
+      ),
     ),
   );
 }
-
 class OppyApp extends StatefulWidget {
   const OppyApp({super.key});
 
@@ -142,7 +144,7 @@ class _OppyAppState extends State<OppyApp> {
       title: 'OppyChat',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: Consumer<AuthProvider>(
+      home: legacy.Consumer<AuthProvider>(
         builder: (context, auth, _) {
           // 1. Si NO está autenticado, directo al Welcome
           if (auth.status != AuthStatus.authenticated) {
@@ -193,6 +195,7 @@ class _OppyAppState extends State<OppyApp> {
         '/onboarding': (context) => const OnboardingScreen(),
         '/select-language': (context) => LanguageSelectionScreen(), // <--- SIN CONST
         '/test-diagnostico': (context) => TestIntroScreen(),      // <--- SIN CONST
+        '/writing-test': (context) => const WritingTestScreen(),
       },
     );
   }

@@ -5,7 +5,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.11.1
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -25,6 +25,7 @@ dependencies:
   # --- Gestión de Estado ---
   provider: ^6.1.2           # Para que toda la app sepa si el usuario está logueado
   app_links: ^7.0.0
+  flutter_riverpod: ^2.5.1
 
 dev_dependencies:
   flutter_test:
