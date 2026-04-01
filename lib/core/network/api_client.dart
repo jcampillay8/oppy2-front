@@ -1,13 +1,12 @@
 // lib/core/network/api_client.dart
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:oppy2_frontend/core/network/api_config.dart';
 
-// Provider de storage (para usarlo en el resto de la app con Riverpod)
 final storageProvider = Provider((ref) => const FlutterSecureStorage());
 
-// Provider del ApiClient
 final apiClientProvider = Provider((ref) {
   final storage = ref.watch(storageProvider);
   return ApiClient(storage);
@@ -17,15 +16,14 @@ class ApiClient {
   late final Dio dio;
   final FlutterSecureStorage _storage;
 
-  // Getter para que AuthService pueda hacer: _apiClient.storage
   FlutterSecureStorage get storage => _storage;
 
   ApiClient(this._storage) {
     dio = Dio(
       BaseOptions(
         baseUrl: ApiConfig.baseUrl,
-        connectTimeout: const Duration(seconds: 10), // Un poco más de tiempo para el backend
-        receiveTimeout: const Duration(seconds: 10),
+        connectTimeout: const Duration(seconds: 15), // Subimos un poco por si el backend está frío
+        receiveTimeout: const Duration(seconds: 15),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -33,30 +31,47 @@ class ApiClient {
       ),
     );
 
-    // INTERCEPTOR DE AUTENTICACIÓN
+    // UN SOLO INTERCEPTOR DE AUTENTICACIÓN (Limpio y robusto)
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          // 1. Definir rutas que NO necesitan token
+          final publicPaths = ['/login', '/register', '/confirm-email'];
+          final isPublic = publicPaths.any((path) => options.path.contains(path));
+
+          if (isPublic) {
+            debugPrint("DEBUG: [${options.method}] Ruta pública: ${options.path}");
+            return handler.next(options);
+          }
+
+          // 2. Intentar leer el token
           final token = await _storage.read(key: 'access_token');
           
-          if (token != null) {
+          if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
+            debugPrint("DEBUG: [${options.method}] Token inyectado en: ${options.path}");
+          } else {
+            debugPrint("DEBUG: [${options.method}] ADVERTENCIA: No hay token para ${options.path}");
           }
+          
           return handler.next(options);
         },
         onError: (DioException e, handler) {
           if (e.response?.statusCode == 401) {
-            print("DEBUG: Token expirado o inválido (401)");
+            debugPrint("DEBUG: [401] No autorizado en ${e.requestOptions.path}");
           }
           return handler.next(e);
         },
       ),
     );
 
-    // LogInterceptor para ver qué pasa en la consola
+    // INTERCEPTOR DE LOGS (Para ver el body de lo que envías y recibes)
     dio.interceptors.add(LogInterceptor(
-      responseBody: true,
+      requestHeader: true,
       requestBody: true,
-    )); 
+      responseHeader: false,
+      responseBody: true,
+      error: true,
+    ));
   }
 }

@@ -15,28 +15,21 @@ class _RegisterFormState extends State<RegisterForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _usernameController = TextEditingController();
+  // ← _usernameController eliminado
 
-  // Método centralizado para manejar el registro
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Guardamos la referencia al ScaffoldMessenger ANTES de cerrar el modal
     final messenger = ScaffoldMessenger.of(context);
     final authProvider = context.read<AuthProvider>();
     
     final success = await authProvider.register(
       _emailController.text.trim(),
       _passwordController.text.trim(),
-      _usernameController.text.trim(),
     );
 
     if (success && mounted) {
-      // 1. Cerramos el modal primero
       Navigator.pop(context);
-
-      // 2. Usamos la referencia guardada 'messenger' para mostrar el SnackBar.
-      // Así ya no dependemos del context del widget que acabamos de destruir.
       messenger.showSnackBar(
         SnackBar(
           content: Row(
@@ -51,18 +44,12 @@ class _RegisterFormState extends State<RegisterForm> {
               ),
             ],
           ),
-          backgroundColor: Colors.blueAccent.shade700,
+          backgroundColor: Colors.blueAccent,
           duration: const Duration(seconds: 10),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           margin: const EdgeInsets.all(20),
-          action: SnackBarAction(
-            label: 'OK',
-            textColor: Colors.white,
-            onPressed: () {
-              // Ya no llamamos a nada con context aquí, el OK solo cierra el SnackBar
-            },
-          ),
+          action: SnackBarAction(label: 'OK', textColor: Colors.white, onPressed: () {}),
         ),
       );
     }
@@ -72,13 +59,11 @@ class _RegisterFormState extends State<RegisterForm> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _usernameController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Usamos watch para reaccionar al estado de carga (authenticating)
     final authStatus = context.watch<AuthProvider>().status;
     final isAuthenticating = authStatus == AuthStatus.authenticating;
 
@@ -88,10 +73,8 @@ class _RegisterFormState extends State<RegisterForm> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 30, 
-        left: 25, 
-        right: 25, 
-        top: 25,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 30,
+        left: 25, right: 25, top: 25,
       ),
       child: Form(
         key: _formKey,
@@ -102,31 +85,18 @@ class _RegisterFormState extends State<RegisterForm> {
             Center(
               child: Container(
                 width: 40, height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(10)),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Crea tu cuenta', 
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)
-            ),
+            const Text('Crea tu cuenta',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 8),
-            const Text(
-              'Únete a la comunidad de OppyChat',
-              style: TextStyle(color: Colors.white54, fontSize: 14),
-            ),
+            const Text('Únete a la comunidad de OppyChat',
+                style: TextStyle(color: Colors.white54, fontSize: 14)),
             const SizedBox(height: 25),
-            
-            _buildTextField(
-              controller: _usernameController,
-              label: 'Nombre de usuario',
-              icon: Icons.person_outline,
-              validator: (v) => v!.isEmpty ? 'Ingresa un nombre de usuario' : null,
-            ),
-            const SizedBox(height: 15),
+
+            // ← solo email y contraseña
             _buildTextField(
               controller: _emailController,
               label: 'Correo electrónico',
@@ -141,9 +111,8 @@ class _RegisterFormState extends State<RegisterForm> {
               isPassword: true,
               validator: (v) => v!.length < 6 ? 'Mínimo 6 caracteres' : null,
             ),
-            
             const SizedBox(height: 35),
-            
+
             SizedBox(
               width: double.infinity,
               height: 55,
@@ -156,11 +125,10 @@ class _RegisterFormState extends State<RegisterForm> {
                   elevation: 0,
                 ),
                 child: isAuthenticating
-                    ? const SizedBox(
-                        height: 20, width: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : const Text('Registrarse', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ? const SizedBox(height: 20, width: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Registrarse',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -169,7 +137,6 @@ class _RegisterFormState extends State<RegisterForm> {
     );
   }
 
-  // Widget auxiliar para mantener el estilo de los campos
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,

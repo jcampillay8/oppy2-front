@@ -1,25 +1,21 @@
 // lib/features/onboarding/screens/onboarding_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:oppy2_frontend/core/theme/app_theme.dart';
 import 'package:oppy2_frontend/features/auth/services/auth_service.dart';
 import 'package:oppy2_frontend/core/network/api_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget { // <-- Cambia aquí
   final int initialStep;
-
-  const OnboardingScreen({
-    super.key, 
-    this.initialStep = 1,
-  });
+  const OnboardingScreen({super.key, this.initialStep = 1});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState(); // <-- Cambia aquí
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> { // <-- Cambia aquí
   late PageController _pageController;
-  final AuthService _authService = AuthService(ApiClient(const FlutterSecureStorage()));
 
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _occupationController = TextEditingController();
@@ -38,7 +34,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _loadExistingData() async {
     try {
-      final status = await _authService.checkNavigationFlow();
+      // 🟢 Obtenemos el servicio correcto de Riverpod
+      final authService = ref.read(authServiceProvider); 
+      
+      // 🟢 Usamos ESA variable (sin el guion bajo)
+      final status = await authService.checkNavigationFlow();
       if (status != null) {
         setState(() {
           _usernameController.text = status['username'] ?? "";
@@ -74,14 +74,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() => _isLoading = true); 
     
     try {
-      final success = await _authService.updateOnboardingProfile(
+      // 🟢 Obtenemos el servicio correcto
+      final authService = ref.read(authServiceProvider);
+
+      // 🟢 Usamos 'authService' (la variable local que acabamos de crear)
+      final success = await authService.updateOnboardingProfile(
         username: _usernameController.text.trim(),
         occupation: _occupationController.text.trim(),
         bio: _bioController.text.trim(),
       );
 
       if (success) {
-        final status = await _authService.checkNavigationFlow();
+        // 🟢 Aquí también usamos 'authService'
+        final status = await authService.checkNavigationFlow();
         if (status != null) {
           int backendStep = (status['current_step'] ?? 1) - 1;
           

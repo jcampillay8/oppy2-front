@@ -45,18 +45,19 @@ class AuthService {
 
   // --- ACTUALIZAR PERFIL ---
   Future<bool> updateOnboardingProfile({
-    required String username,
-    required String occupation,
-    required String bio,
+    String? username,
+    String? occupation,
+    String? bio,
   }) async {
     try {
+      final data = <String, dynamic>{};
+      if (username != null && username.trim().isNotEmpty) data['username'] = username.trim();
+      if (occupation != null && occupation.trim().isNotEmpty) data['occupation'] = occupation.trim();
+      if (bio != null && bio.trim().isNotEmpty) data['bio'] = bio.trim();
+
       final response = await _apiClient.dio.patch(
         '/onboarding/update-profile',
-        data: {
-          "username": username,
-          "occupation": occupation,
-          "bio": bio,
-        },
+        data: data,
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -66,15 +67,16 @@ class AuthService {
   }
 
   // --- REGISTRO ---
-  Future<bool> register(String email, String password, String username) async {
+  Future<bool> register(String email, String password) async {
     try {
+      final tempUsername = email.split("@")[0].toLowerCase();
       final formData = FormData.fromMap({
         "email": email,
-        "username": username,
+        "username": tempUsername,
         "password": password,
-        "first_name": "Jaime",
-        "last_name": "Campillay",
-        "terms_accepted": true, 
+        "first_name": "",
+        "last_name": "",
+        "terms_accepted": true,
       });
       final response = await _apiClient.dio.post(ApiConfig.register, data: formData);
       return response.statusCode != null && response.statusCode! < 300;
@@ -103,15 +105,14 @@ class AuthService {
       final response = await _apiClient.dio.post(ApiConfig.login, data: formData);
 
       if (response.statusCode == 200) {
-        final accessToken = response.data['access_token'];
-        final refreshToken = response.data['refresh_token'];
+        final accessToken = response.data['accessToken'];   // ← camelCase
+        // El backend JWT no devuelve refresh_token, lo incluye todo en accessToken
         
-        // Guardamos en el storage del ApiClient. 
-        // La PRÓXIMA petición usará el interceptor y leerá este nuevo token.
-        await _apiClient.storage.write(key: 'access_token', value: accessToken);
-        await _apiClient.storage.write(key: 'refresh_token', value: refreshToken);
-        
-        return true;
+        if (accessToken != null) {
+          await _apiClient.storage.write(key: 'access_token', value: accessToken);
+          debugPrint("DEBUG: Tokens guardados exitosamente.");
+          return true;
+        }
       }
       return false;
     } catch (e) {

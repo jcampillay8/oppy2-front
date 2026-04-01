@@ -9,7 +9,9 @@ import 'package:oppy2_frontend/core/network/api_client.dart';
 enum AuthStatus { authenticated, unauthenticated, authenticating, emailConfirmed, error }
 
 class AuthProvider with ChangeNotifier {
-  final AuthService _authService = AuthService(ApiClient(const FlutterSecureStorage()));
+  final AuthService _authService; // ← ya no lo crea, lo recibe
+
+  AuthProvider(this._authService);
   
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     // ✅ COPIA Y PEGA EL ID DEL JSON WEB AQUÍ:
@@ -32,24 +34,26 @@ class AuthProvider with ChangeNotifier {
     try {
       final success = await _authService.login(username, password);
       if (success) {
-        _status = AuthStatus.authenticated;
-        notifyListeners();
-        return true;
-      } else {
-        _setUnauthenticated("Credenciales incorrectas.");
-        return false;
+        // Igual que Google: verificar que el token ya es legible antes de navegar
+        final userData = await _authService.checkNavigationFlow();
+        if (userData != null) {
+          _status = AuthStatus.authenticated;
+          notifyListeners();
+          return true;
+        }
       }
+      _setUnauthenticated("Credenciales incorrectas.");
+      return false;
     } catch (e) {
       _setUnauthenticated("Error de conexión.");
       return false;
     }
   }
-
   // --- 2. REGISTRO MANUAL ---
-  Future<bool> register(String email, String password, String username) async {
+  Future<bool> register(String email, String password) async {
     _setAuthenticating();
     try {
-      final success = await _authService.register(email, password, username);
+      final success = await _authService.register(email, password);
       if (success) {
         _status = AuthStatus.unauthenticated; 
         _errorMessage = "Verifica tu email.";

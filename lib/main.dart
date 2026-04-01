@@ -39,18 +39,19 @@ void main() {
   );
 }
 
-class OppyAppWrapper extends StatelessWidget {
+class OppyAppWrapper extends ConsumerWidget {
   const OppyAppWrapper({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Instanciamos el ApiClient una sola vez
-    final apiClient = ApiClient(const FlutterSecureStorage());
+  Widget build(BuildContext context, WidgetRef ref) {
+    final apiClient = ref.watch(apiClientProvider);
+    final authService = ref.watch(authServiceProvider); // ← agregar esto
 
     return legacy.MultiProvider(
       providers: [
-        legacy.ChangeNotifierProvider(create: (_) => AuthProvider()),
-        // INYECCIÓN CLAVE:
+        legacy.ChangeNotifierProvider(
+          create: (_) => AuthProvider(authService), // ← pasar authService
+        ),
         legacy.Provider<PlacementTestService>(
           create: (_) => PlacementTestService(apiClient),
         ),
@@ -60,17 +61,16 @@ class OppyAppWrapper extends StatelessWidget {
   }
 }
 
-class OppyApp extends StatefulWidget {
+class OppyApp extends ConsumerStatefulWidget { // <--- Cambiar aquí
   const OppyApp({super.key});
   @override
-  State<OppyApp> createState() => _OppyAppState();
+  ConsumerState<OppyApp> createState() => _OppyAppState(); // <--- Cambiar aquí
 }
 
-class _OppyAppState extends State<OppyApp> {
+class _OppyAppState extends ConsumerState<OppyApp> { // <--- Cambiar aquí
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   late AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
-  final AuthService _authService = AuthService(ApiClient(const FlutterSecureStorage()));
 
   @override
   void initState() {
@@ -126,14 +126,15 @@ class _OppyAppState extends State<OppyApp> {
     }
   }
 
-  Future<void> _confirmAccount(String token) async {
-    final success = await _authService.confirmEmail(token);
+Future<void> _confirmAccount(String token) async {
+    // 🟢 USAMOS RIVERPOD AQUÍ TAMBIÉN
+    final authService = ref.read(authServiceProvider);
+    final success = await authService.confirmEmail(token);
     if (success && mounted) {
       _handleSuccessView();
     }
   }
 
-  // --- SOLO UN DISPOSE AQUÍ ---
   @override
   void dispose() {
     _linkSubscription?.cancel();
@@ -142,6 +143,9 @@ class _OppyAppState extends State<OppyApp> {
 
   @override
   Widget build(BuildContext context) {
+    // 🟢 ESTA ES LA INSTANCIA QUE MANDA
+    final authService = ref.watch(authServiceProvider);
+
     return MaterialApp(
       navigatorKey: _navigatorKey,
       title: 'OppyChat',
@@ -154,7 +158,8 @@ class _OppyAppState extends State<OppyApp> {
           }
 
           return FutureBuilder<Map<String, dynamic>?>(
-            future: _authService.checkNavigationFlow(),
+            // Ahora checkNavigationFlow usa el MISMO ApiClient que el login
+            future: authService.checkNavigationFlow(), 
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Scaffold(
@@ -163,19 +168,29 @@ class _OppyAppState extends State<OppyApp> {
                 );
               }
 
-              final data = snapshot.data ?? {};
-              final bool hasTest = data['has_test'] ?? false;
-              final int currentStep = data['current_step'] ?? 1;
+                final data = snapshot.data ?? {};
 
-              if (currentStep < 4) {
-                return OnboardingScreen(initialStep: currentStep);
-              }
+                final bool needsOnboarding = data['needs_onboarding'] ?? false;
+                final int currentStep = data['current_step'] ?? 1;
+                final String? targetLanguage = data['target_language'];
 
-              if (!hasTest) {
-                return const LanguageSelectionScreen();
-              }
+                // Paso 1-3: completar perfil
+                if (needsOnboarding && currentStep <= 3) {
+                  return OnboardingScreen(initialStep: currentStep);
+                }
 
-              return const HomeScreen();
+                // Paso 4: elegir idioma
+                if (needsOnboarding && currentStep == 4) {
+                  return const LanguageSelectionScreen();
+                }
+
+                // Paso 5: test pendiente
+                if (needsOnboarding && currentStep == 5) {
+                  return const TestIntroScreen();
+                }
+
+                // Paso 6: todo completo
+                return const HomeScreen();
             },
           );
         },
