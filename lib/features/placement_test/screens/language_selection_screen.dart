@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:oppy2_frontend/core/theme/app_theme.dart';
 import 'package:oppy2_frontend/features/auth/services/auth_service.dart';
+import 'package:oppy2_frontend/core/network/api_client.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
   const LanguageSelectionScreen({super.key});
@@ -11,7 +13,7 @@ class LanguageSelectionScreen extends StatefulWidget {
 }
 
 class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
-  final AuthService _authService = AuthService();
+  final AuthService _authService = AuthService(ApiClient(const FlutterSecureStorage()));
   bool _isLoading = false;
 
   Future<void> _handleLanguageSelect(String langCode) async {

@@ -1,13 +1,15 @@
 // lib/features/auth/providers/auth_provider.dart
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:oppy2_frontend/features/auth/services/auth_service.dart';
 import 'package:oppy2_frontend/core/shared_models/user_model.dart';
+import 'package:oppy2_frontend/core/network/api_client.dart';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating, emailConfirmed, error }
 
 class AuthProvider with ChangeNotifier {
-  final AuthService _authService = AuthService();
+  final AuthService _authService = AuthService(ApiClient(const FlutterSecureStorage()));
   
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     // ✅ COPIA Y PEGA EL ID DEL JSON WEB AQUÍ:

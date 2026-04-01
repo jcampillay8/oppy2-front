@@ -1,41 +1,30 @@
 // lib/features/auth/services/auth_service.dart
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart'; // Para debugPrint
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/material.dart'; 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:oppy2_frontend/core/network/api_client.dart';
 import 'package:oppy2_frontend/core/network/api_config.dart';
 
+// Definimos el provider para que otras partes de la app puedan usar AuthService
+final authServiceProvider = Provider((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return AuthService(apiClient);
+});
+
 class AuthService {
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: ApiConfig.baseUrl,
-    connectTimeout: const Duration(seconds: 5),
-    receiveTimeout: const Duration(seconds: 5),
-    followRedirects: false, 
-    validateStatus: (status) => status! < 500,
-  ));
+  // Ahora usamos el ApiClient centralizado
+  final ApiClient _apiClient;
 
-  final _storage = const FlutterSecureStorage();
+  AuthService(this._apiClient);
 
-  // --- NUEVO: ACTUALIZAR IDIOMA DEL TEST ---
+  // --- ACTUALIZAR IDIOMA DEL TEST ---
   Future<bool> updateTargetLanguage(String langCode) async {
     try {
-      // AGREGAMOS /onboarding ANTES DE /select-language
-      final String url = ApiConfig.getFullUrl('/onboarding/select-language'); 
-      
-      final token = await _storage.read(key: 'access_token');
-      if (token == null) return false;
-
-      final response = await _dio.post(
-        url,
-        data: {
-          "target_language": langCode,
-        },
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-          },
-        ),
+      // El interceptor de _apiClient pondrá el Token automáticamente
+      final response = await _apiClient.dio.post(
+        '/onboarding/select-language', 
+        data: {"target_language": langCode},
       );
-
       return response.statusCode == 200;
     } catch (e) {
       _handleError(e);
@@ -46,50 +35,29 @@ class AuthService {
   // --- CONSULTAR FLUJO DE NAVEGACIÓN ---
   Future<Map<String, dynamic>?> checkNavigationFlow() async {
     try {
-      final String url = ApiConfig.getFullUrl('/onboarding/status');
-      final token = await _storage.read(key: 'access_token');
-      
-      if (token == null) return null;
-
-      final response = await _dio.get(
-        url,
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        return response.data; 
-      }
-      return null;
+      final response = await _apiClient.dio.get('/onboarding/status');
+      return response.statusCode == 200 ? response.data : null;
     } catch (e) {
       _handleError(e);
       return null;
     }
   }
 
-  // --- ACTUALIZAR PERFIL (Vistas 1, 2 y 3) ---
+  // --- ACTUALIZAR PERFIL ---
   Future<bool> updateOnboardingProfile({
     required String username,
     required String occupation,
     required String bio,
   }) async {
     try {
-      final String url = ApiConfig.getFullUrl('/onboarding/update-profile');
-      final token = await _storage.read(key: 'access_token');
-
-      final response = await _dio.patch(
-        url,
+      final response = await _apiClient.dio.patch(
+        '/onboarding/update-profile',
         data: {
           "username": username,
           "occupation": occupation,
           "bio": bio,
         },
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
-
       return response.statusCode == 200;
     } catch (e) {
       _handleError(e);
@@ -100,7 +68,6 @@ class AuthService {
   // --- REGISTRO ---
   Future<bool> register(String email, String password, String username) async {
     try {
-      final String url = ApiConfig.getFullUrl(ApiConfig.register); 
       final formData = FormData.fromMap({
         "email": email,
         "username": username,
@@ -109,7 +76,7 @@ class AuthService {
         "last_name": "Campillay",
         "terms_accepted": true, 
       });
-      final response = await _dio.post(url, data: formData);
+      final response = await _apiClient.dio.post(ApiConfig.register, data: formData);
       return response.statusCode != null && response.statusCode! < 300;
     } catch (e) {
       _handleError(e);
@@ -120,8 +87,8 @@ class AuthService {
   // --- CONFIRMACIÓN DE EMAIL ---
   Future<bool> confirmEmail(String token) async {
     try {
-      final String url = "${ApiConfig.baseUrl}/confirm-email/$token";
-      final response = await _dio.get(url, options: Options(followRedirects: false, validateStatus: (status) => status! < 400));
+      // Usamos el endpoint relativo si ApiConfig.baseUrl está bien seteado
+      final response = await _apiClient.dio.get('/confirm-email/$token');
       return response.statusCode == 200 || response.statusCode == 307;
     } catch (e) {
       _handleError(e);
@@ -132,17 +99,18 @@ class AuthService {
   // --- LOGIN ---
   Future<bool> login(String username, String password) async {
     try {
-      final String url = ApiConfig.getFullUrl(ApiConfig.login);
       final formData = FormData.fromMap({"username": username, "password": password});
-      final response = await _dio.post(url, data: formData);
+      final response = await _apiClient.dio.post(ApiConfig.login, data: formData);
 
       if (response.statusCode == 200) {
         final accessToken = response.data['access_token'];
         final refreshToken = response.data['refresh_token'];
-        await _storage.write(key: 'access_token', value: accessToken);
-        await _storage.write(key: 'refresh_token', value: refreshToken);
         
-        _dio.options.headers['Authorization'] = 'Bearer $accessToken';
+        // Guardamos en el storage del ApiClient. 
+        // La PRÓXIMA petición usará el interceptor y leerá este nuevo token.
+        await _apiClient.storage.write(key: 'access_token', value: accessToken);
+        await _apiClient.storage.write(key: 'refresh_token', value: refreshToken);
+        
         return true;
       }
       return false;
@@ -155,16 +123,17 @@ class AuthService {
   // --- GOOGLE SIGN IN ---
   Future<bool> signInWithGoogle(String idToken) async {
     try {
-      final String url = ApiConfig.getFullUrl(ApiConfig.googleMobileSignin); 
-      final response = await _dio.post(url, data: {"id_token": idToken}, options: Options(contentType: Headers.jsonContentType));
+      final response = await _apiClient.dio.post(
+        ApiConfig.googleMobileSignin, 
+        data: {"id_token": idToken}
+      );
 
       if (response.statusCode == 200) {
         final accessToken = response.data['access_token'];
         final refreshToken = response.data['refresh_token'];
         if (accessToken != null) {
-          await _storage.write(key: 'access_token', value: accessToken);
-          await _storage.write(key: 'refresh_token', value: refreshToken);
-          _dio.options.headers['Authorization'] = 'Bearer $accessToken';
+          await _apiClient.storage.write(key: 'access_token', value: accessToken);
+          await _apiClient.storage.write(key: 'refresh_token', value: refreshToken);
           return true;
         }
       }
@@ -177,8 +146,8 @@ class AuthService {
 
   // --- LOGOUT ---
   Future<void> logout() async {
-    await _storage.deleteAll();
-    _dio.options.headers.remove('Authorization');
+    await _apiClient.storage.deleteAll();
+    // No necesitamos limpiar headers manualmente, el interceptor verá que no hay token
   }
 
   void _handleError(dynamic e) {

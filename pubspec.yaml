@@ -1,5 +1,5 @@
 name: oppy2_frontend
-description: "Backend para práctica de inglés con IA - Enfoque Autenticación"
+description: "Frontend para práctica de inglés con IA - Enfoque Autenticación"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -11,29 +11,36 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # --- Iconos ---
+  # --- UI & Icons ---
   cupertino_icons: ^1.0.8
   font_awesome_flutter: ^10.7.0
+
+  # --- Autenticación & Seguridad ---
   google_sign_in: ^6.2.1
-
-  # --- Comunicación con Backend ---
-  dio: ^5.4.1                # El 'requests' de Flutter, más potente y con interceptores
-  
-  # --- Seguridad ---
-  flutter_secure_storage: ^9.0.0 # Guarda los JWT en el Keystore/Keychain del celular
-  
-  # --- Gestión de Estado ---
-  provider: ^6.1.2           # Para que toda la app sepa si el usuario está logueado
+  flutter_secure_storage: ^9.0.0
   app_links: ^7.0.0
-  flutter_riverpod: ^2.5.1
 
+  # --- Comunicación & Networking ---
+  dio: ^5.4.1
+  path_provider: ^2.1.2        # Actualizado a la última estable
+  permission_handler: ^11.3.0  # ¡IMPORTANTE para el micrófono!
+
+  # --- Gestión de Estado ---
+  flutter_riverpod: ^2.5.1
+  provider: ^6.1.2             # Versión estable para tu MultiProvider
+
+  # --- Multimedia ---
+  record: 5.1.0 
+  record_platform_interface: 1.1.0               # ¡CRÍTICO para grabar el Speaking!
+  audioplayers: ^5.2.1
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: ^4.0.0           # Versión más estable para SDK 3.x
 
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/bigben.jpg
+    - assets/images/

@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:oppy2_frontend/core/theme/app_theme.dart';
 import 'package:oppy2_frontend/features/auth/services/auth_service.dart';
+import 'package:oppy2_frontend/core/network/api_client.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final int initialStep;
@@ -17,7 +19,7 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   late PageController _pageController;
-  final AuthService _authService = AuthService();
+  final AuthService _authService = AuthService(ApiClient(const FlutterSecureStorage()));
 
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _occupationController = TextEditingController();

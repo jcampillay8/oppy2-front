@@ -1,12 +1,13 @@
 // lib/core/network/api_client.dart
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // <--- Añadir esto
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:oppy2_frontend/core/network/api_config.dart';
 
-// Definimos el storage como un provider independiente (buena práctica)
+// Provider de storage (para usarlo en el resto de la app con Riverpod)
 final storageProvider = Provider((ref) => const FlutterSecureStorage());
 
+// Provider del ApiClient
 final apiClientProvider = Provider((ref) {
   final storage = ref.watch(storageProvider);
   return ApiClient(storage);
@@ -16,12 +17,15 @@ class ApiClient {
   late final Dio dio;
   final FlutterSecureStorage _storage;
 
+  // Getter para que AuthService pueda hacer: _apiClient.storage
+  FlutterSecureStorage get storage => _storage;
+
   ApiClient(this._storage) {
     dio = Dio(
       BaseOptions(
         baseUrl: ApiConfig.baseUrl,
-        connectTimeout: const Duration(seconds: 5),
-        receiveTimeout: const Duration(seconds: 3),
+        connectTimeout: const Duration(seconds: 10), // Un poco más de tiempo para el backend
+        receiveTimeout: const Duration(seconds: 10),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -33,22 +37,23 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          // CAMBIAR 'auth_token' por 'access_token'
           final token = await _storage.read(key: 'access_token');
           
           if (token != null) {
-            // Para debug, puedes dejar este print un momento:
-            // print("DEBUG: Token inyectado correctamente en el header.");
             options.headers['Authorization'] = 'Bearer $token';
-          } else {
-            print("DEBUG: OJO, no se encontró el token bajo la llave 'access_token'");
           }
           return handler.next(options);
+        },
+        onError: (DioException e, handler) {
+          if (e.response?.statusCode == 401) {
+            print("DEBUG: Token expirado o inválido (401)");
+          }
+          return handler.next(e);
         },
       ),
     );
 
-    // Tu LogInterceptor para debug
+    // LogInterceptor para ver qué pasa en la consola
     dio.interceptors.add(LogInterceptor(
       responseBody: true,
       requestBody: true,
