@@ -22,25 +22,37 @@ dependencies:
 
   # --- Comunicación & Networking ---
   dio: ^5.4.1
-  path_provider: ^2.1.2        # Actualizado a la última estable
-  permission_handler: ^11.3.0  # ¡IMPORTANTE para el micrófono!
+  path_provider: ^2.1.2
+  permission_handler: ^11.3.0
 
   # --- Gestión de Estado ---
   flutter_riverpod: ^2.5.1
-  provider: ^6.1.2             # Versión estable para tu MultiProvider
+  provider: ^6.1.2
 
   # --- Multimedia ---
   record: 5.1.0 
-  record_platform_interface: 1.1.0               # ¡CRÍTICO para grabar el Speaking!
+  record_platform_interface: 1.1.0
   audioplayers: ^5.2.1
   
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0           # Versión más estable para SDK 3.x
+  flutter_lints: ^4.0.0
+  # Dependencia para generar los iconos del launcher
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
+    # Asegúrate de que oppy_robot.png esté dentro de esta carpeta
+
+# --- Configuración de Iconos de la App ---
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/images/oppy_robot.png"
+  # Color de fondo para iconos adaptativos en Android (combinando con tu tema oscuro)
+  adaptive_icon_background: "#0F172A"
+  adaptive_icon_foreground: "assets/images/oppy_robot.png"
