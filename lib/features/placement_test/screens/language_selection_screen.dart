@@ -1,31 +1,54 @@
 // lib/features/placement_test/screens/language_selection_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:oppy2_frontend/core/theme/app_theme.dart';
 import 'package:oppy2_frontend/features/auth/services/auth_service.dart';
-import 'package:oppy2_frontend/core/network/api_client.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-class LanguageSelectionScreen extends StatefulWidget {
+class LanguageSelectionScreen extends ConsumerStatefulWidget {
   const LanguageSelectionScreen({super.key});
 
   @override
-  State<LanguageSelectionScreen> createState() => _LanguageSelectionScreenState();
+  ConsumerState<LanguageSelectionScreen> createState() => _LanguageSelectionScreenState();
 }
 
-class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
-  final AuthService _authService = AuthService(ApiClient(const FlutterSecureStorage()));
+class _LanguageSelectionScreenState extends ConsumerState<LanguageSelectionScreen> {
   bool _isLoading = false;
 
   Future<void> _handleLanguageSelect(String langCode) async {
+    // Español no disponible aún
+    if (langCode == 'es') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.construction_rounded, color: Colors.white),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  "¡Próximamente! El curso de Español está en desarrollo.",
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(20),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return; // ← no avanza
+    }
+
     setState(() => _isLoading = true);
     
-    // Llamada al endpoint /select-language del backend
-    final success = await _authService.updateTargetLanguage(langCode);
+    final authService = ref.read(authServiceProvider); // ← instancia correcta
+    final success = await authService.updateTargetLanguage(langCode);
 
     setState(() => _isLoading = false);
 
     if (success && mounted) {
-      // Navegamos a la intro del test pasando el código del idioma
       Navigator.pushNamed(context, '/test-diagnostico', arguments: langCode);
     }
   }
@@ -41,13 +64,13 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
-                  "¿Qué lenguaje desea aprender?",
+                  "¿Qué lenguaje deseas aprender?",
                   style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 40),
-                _buildOption("English", "🇺🇸", "en"),
+                _buildOption("English", "🇺🇸", "en", available: true),
                 const SizedBox(height: 20),
-                _buildOption("Español", "🇪🇸", "es"),
+                _buildOption("Español", "🇪🇸", "es", available: false),
               ],
             ),
           ),
@@ -61,19 +84,24 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
     );
   }
 
-  Widget _buildOption(String label, String flag, String code) {
+  Widget _buildOption(String label, String flag, String code, {required bool available}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: ListTile(
-        onTap: () => _handleLanguageSelect(code),
-        tileColor: Colors.white.withOpacity(0.05),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.outlineGrey),
+      child: Opacity(
+        opacity: available ? 1.0 : 0.4, // ← visualmente deshabilitado
+        child: ListTile(
+          onTap: () => _handleLanguageSelect(code),
+          tileColor: Colors.white.withOpacity(0.05),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppColors.outlineGrey),
+          ),
+          leading: Text(flag, style: const TextStyle(fontSize: 30)),
+          title: Text(label, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+          trailing: available
+              ? const Icon(Icons.arrow_forward_ios, color: AppColors.textGrey, size: 16)
+              : const Icon(Icons.lock_outline, color: AppColors.textGrey, size: 16),
         ),
-        leading: Text(flag, style: const TextStyle(fontSize: 30)),
-        title: Text(label, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
-        trailing: const Icon(Icons.arrow_forward_ios, color: AppColors.textGrey, size: 16),
       ),
     );
   }
