@@ -27,19 +27,24 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
       ),
       child: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
+      onTap: (index) {
           // 1. Si presionamos donde ya estamos, no hacemos nada
           if (index == widget.initialIndex) return;
           
-          // 2. Navegamos directamente. 
-          // No hace falta setState porque la nueva pantalla cargará un nuevo 
-          // HomeBottomNav con el index correcto vía 'initialIndex'.
+          // 2. Lógica de navegación
           switch (index) {
             case 0:
               Navigator.pushReplacementNamed(context, '/home');
               break;
             case 1:
               // Navigator.pushReplacementNamed(context, '/lessons');
+              break;
+            case 2:
+              // Navigator.pushReplacementNamed(context, '/rank');
+              break;
+            case 3:
+              // Navegamos a la nueva pantalla de estadísticas
+              Navigator.pushReplacementNamed(context, '/statistics');
               break;
             case 4:
               Navigator.pushReplacementNamed(context, '/profile');
