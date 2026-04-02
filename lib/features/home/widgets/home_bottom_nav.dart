@@ -37,10 +37,11 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
               Navigator.pushReplacementNamed(context, '/home');
               break;
             case 1:
-              // Navigator.pushReplacementNamed(context, '/lessons');
+              Navigator.pushReplacementNamed(context, '/lessons');
+              break;
               break;
             case 2:
-              // Navigator.pushReplacementNamed(context, '/rank');
+              Navigator.pushReplacementNamed(context, '/rank');
               break;
             case 3:
               // Navegamos a la nueva pantalla de estadísticas

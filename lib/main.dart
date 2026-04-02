@@ -32,6 +32,8 @@ import 'package:oppy2_frontend/features/placement_test/screens/test_results_scre
 import 'package:oppy2_frontend/features/placement_test/services/placement_test_service.dart';
 import 'package:oppy2_frontend/features/profile/screens/profile_screen.dart';
 import 'package:oppy2_frontend/features/statistics/screens/statistics_screen.dart';
+import 'package:oppy2_frontend/features/lessons/screens/lessons_screen.dart';
+import 'package:oppy2_frontend/features/ranking/screens/ranking_screen.dart';
 
 void main() {
   runApp(
@@ -211,6 +213,8 @@ Future<void> _confirmAccount(String token) async {
         '/test-results': (context) => const TestResultsScreen(),
         '/profile': (context) => ProfileScreen(),
         '/statistics': (context) => const StatisticsScreen(),
+        '/lessons': (context) => const LessonsScreen(),
+        '/rank': (context) => const RankingScreen(),
       },
     );
   }
