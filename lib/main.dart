@@ -35,6 +35,14 @@ import 'package:oppy2_frontend/features/statistics/screens/statistics_screen.dar
 import 'package:oppy2_frontend/features/lessons/screens/lessons_screen.dart';
 import 'package:oppy2_frontend/features/ranking/screens/ranking_screen.dart';
 
+import 'package:oppy2_frontend/features/roleplay_ia/screens/avatar_management_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/roleplay_lobby_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/avatar_editor_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/active_sessions_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/chat_view_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/models/avatar_model.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/all_scenarios_screen.dart';
+
 void main() {
   runApp(
     const ProviderScope(
@@ -215,6 +223,20 @@ Future<void> _confirmAccount(String token) async {
         '/statistics': (context) => const StatisticsScreen(),
         '/lessons': (context) => const LessonsScreen(),
         '/rank': (context) => const RankingScreen(),
+        // --- RUTAS DE ROLEPLAY IA ---
+        '/roleplay-lobby': (context) => const RoleplayLobbyScreen(),
+        '/active-sessions': (context) => const ActiveSessionsScreen(),
+        '/avatar-editor': (context) => const AvatarEditorScreen(),
+        '/avatar-manager': (context) => const AvatarManagementScreen(),
+        '/all-scenarios': (context) => const AllScenariosScreen(),
+        '/chat-view': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is AvatarModel) {
+            return ChatViewScreen(avatar: args);
+          }
+          // Retorno de emergencia por si algo sale mal con los argumentos
+          return const Scaffold(body: Center(child: Text("Error: Avatar no encontrado")));
+        },
       },
     );
   }

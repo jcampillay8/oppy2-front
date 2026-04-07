@@ -5,6 +5,7 @@ import 'package:oppy2_frontend/core/theme/app_theme.dart';
 class AppColors {
   // Colores Base
   static const Color primaryBlue = Color(0xFF3B82F6); // Azul brillante Oppy
+  static const Color accentBlue = primaryBlue;
   static const Color backgroundDark = Color(0xFF0F172A); // Fondo profundo
   static const Color cardGrey = Color(0xFF1E293B);   // Fondo de tarjetas
   

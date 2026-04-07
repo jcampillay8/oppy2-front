@@ -21,6 +21,7 @@ class PracticeGrid extends StatelessWidget {
                 iconColor: AppColors.accentPurple,
                 title: 'Roleplay IA',
                 subtitle: 'Simula situaciones en restaurantes.',
+                onTap: () => Navigator.pushNamed(context, '/roleplay-lobby'), // 👈 Enrutamiento
               ),
             ),
             const SizedBox(width: 16),
@@ -30,6 +31,9 @@ class PracticeGrid extends StatelessWidget {
                 iconColor: AppColors.successGreen,
                 title: 'Coach de Voz',
                 subtitle: 'Mejora tu acento y pronunciación.',
+                onTap: () {
+                  // Lógica para Coach de Voz en el futuro
+                },
               ),
             ),
           ],
@@ -42,41 +46,45 @@ class PracticeGrid extends StatelessWidget {
     required IconData icon, 
     required Color iconColor, 
     required String title, 
-    required String subtitle
+    required String subtitle,
+    required VoidCallback onTap, // 👈 Nuevo parámetro
   }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.cardGrey, 
-        borderRadius: BorderRadius.circular(20)
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.15), 
-                  borderRadius: BorderRadius.circular(14)
+    return GestureDetector( // 👈 Agregamos el detector de gestos
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.cardGrey, 
+          borderRadius: BorderRadius.circular(20)
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: iconColor.withOpacity(0.15), 
+                    borderRadius: BorderRadius.circular(14)
+                  ),
+                  child: Icon(icon, color: iconColor, size: 28),
                 ),
-                child: Icon(icon, color: iconColor, size: 28),
-              ),
-              const Icon(Icons.arrow_forward_ios, color: AppColors.textGrey, size: 16),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(title, 
-            style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          Text(subtitle, 
-            style: const TextStyle(color: AppColors.textGrey, fontSize: 13), 
-            maxLines: 2, 
-            overflow: TextOverflow.ellipsis
-          ),
-        ],
+                const Icon(Icons.arrow_forward_ios, color: AppColors.textGrey, size: 16),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Text(title, 
+              style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text(subtitle, 
+              style: const TextStyle(color: AppColors.textGrey, fontSize: 13), 
+              maxLines: 2, 
+              overflow: TextOverflow.ellipsis
+            ),
+          ],
+        ),
       ),
     );
   }

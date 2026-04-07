@@ -1,0 +1,134 @@
+// lib/features/roleplay_ia/models/avatar_model.dart
+import 'dart:convert';
+
+class AvatarModel {
+  final int? id;
+  final String guid;
+  final String title;
+  final int userId;
+  final int? hostProfileId;
+  final String name;
+  final String? roleAvatar;
+  final String? roleUsuario;
+  final String? objective;
+  final String? context;
+  final String? characterTraits;
+  final String? rules;
+  final String languagePreference;
+  final String selectedVoice;
+  final bool isTtsEnabled;
+  final bool isPublic;
+  final int likesCount; // 👈 Cambiado a obligatorio (no opcional) para match con DB
+  final String? scenarioCategory; // 👈 Nuevo campo
+  final bool isDeleted;
+  final DateTime? createdAt;
+
+  AvatarModel({
+    this.id,
+    required this.guid,
+    required this.title,
+    required this.userId,
+    this.hostProfileId,
+    required this.name,
+    this.roleAvatar,
+    this.roleUsuario,
+    this.objective,
+    this.context,
+    this.characterTraits,
+    this.rules,
+    this.languagePreference = "en-US",
+    this.selectedVoice = "us_female",
+    this.isTtsEnabled = false,
+    this.isPublic = false,
+    this.likesCount = 0, // 👈 Inicializado en 0
+    this.scenarioCategory, // 👈 Agregado al constructor
+    this.isDeleted = false,
+    this.createdAt,
+  });
+
+  /// Crea una copia del modelo con campos modificados
+  AvatarModel copyWith({
+    String? title,
+    String? name,
+    String? roleAvatar,
+    String? objective,
+    String? context,
+    String? languagePreference,
+    String? selectedVoice,
+    bool? isTtsEnabled,
+    bool? isPublic,
+    int? likesCount, // 👈 Agregado
+    String? scenarioCategory, // 👈 Agregado
+  }) {
+    return AvatarModel(
+      id: id,
+      guid: guid,
+      title: title ?? this.title,
+      userId: userId,
+      hostProfileId: hostProfileId,
+      name: name ?? this.name,
+      roleAvatar: roleAvatar ?? this.roleAvatar,
+      roleUsuario: roleUsuario,
+      objective: objective ?? this.objective,
+      context: context ?? this.context,
+      characterTraits: characterTraits ?? this.characterTraits,
+      rules: rules ?? this.rules,
+      languagePreference: languagePreference ?? this.languagePreference,
+      selectedVoice: selectedVoice ?? this.selectedVoice,
+      isTtsEnabled: isTtsEnabled ?? this.isTtsEnabled,
+      isPublic: isPublic ?? this.isPublic,
+      likesCount: likesCount ?? this.likesCount, // 👈 Mapeado
+      scenarioCategory: scenarioCategory ?? this.scenarioCategory, // 👈 Mapeado
+      isDeleted: isDeleted,
+      createdAt: createdAt,
+    );
+  }
+
+  /// Mapeo desde el JSON del Backend (FastAPI)
+  factory AvatarModel.fromJson(Map<String, dynamic> json) {
+    return AvatarModel(
+      id: json['id'],
+      guid: json['guid'] ?? '',
+      title: json['title'] ?? 'Escenario sin título',
+      userId: json['userId'] ?? json['user_id'] ?? 0,
+      hostProfileId: json['hostProfileId'] ?? json['host_profile_id'],
+      name: json['name'] ?? '',
+      roleAvatar: json['roleAvatar'] ?? json['role_avatar'],
+      roleUsuario: json['roleUsuario'] ?? json['role_usuario'],
+      objective: json['objective'],
+      context: json['context'],
+      characterTraits: json['characterTraits'] ?? json['character_traits'],
+      rules: json['rules'],
+      languagePreference: json['languagePreference'] ?? json['language_preference'] ?? 'en-US',
+      selectedVoice: json['selectedVoice'] ?? json['selected_voice'] ?? 'us_female',
+      isTtsEnabled: json['isTtsEnabled'] ?? json['is_tts_enabled'] ?? false,
+      isPublic: json['isPublic'] ?? json['is_public'] ?? false,
+      likesCount: json['likesCount'] ?? json['likes_count'] ?? 0, // 👈 Mapeo doble (camelCase y snake_case)
+      scenarioCategory: json['scenarioCategory'] ?? json['scenario_category'], // 👈 Mapeo doble
+      isDeleted: json['isDeleted'] ?? json['is_deleted'] ?? false,
+      createdAt: json['createdAt'] != null || json['created_at'] != null
+          ? DateTime.parse(json['createdAt'] ?? json['created_at']) 
+          : null,
+    );
+  }
+
+  /// Mapeo hacia JSON para enviar al Backend
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'name': name,
+      'role_avatar': roleAvatar,
+      'role_usuario': roleUsuario,
+      'objective': objective,
+      'context': context,
+      'character_traits': characterTraits,
+      'rules': rules,
+      'language_preference': languagePreference,
+      'selected_voice': selectedVoice,
+      'is_tts_enabled': isTtsEnabled,
+      'is_public': isPublic,
+      'scenario_category': scenarioCategory, // 👈 Enviamos la categoría (opcional)
+      // Nota: likes_count no suele enviarse en el POST/PUT, el backend lo maneja
+    };
+  }
+}
