@@ -1,4 +1,5 @@
 // lib/features/roleplay_ia/providers/avatar_provider.dart
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/avatar_model.dart';
 import '../services/roleplay_service.dart';
@@ -14,7 +15,6 @@ class AvatarNotifier extends StateNotifier<AsyncValue<List<AvatarModel>>> {
 
   /// Carga inicial: Combina avatares públicos y del usuario
   Future<void> loadAvatars() async {
-    // Solo ponemos loading si no hay datos previos para evitar parpadeos molestos
     if (!state.hasValue) {
       state = const AsyncValue.loading();
     }
@@ -22,20 +22,34 @@ class AvatarNotifier extends StateNotifier<AsyncValue<List<AvatarModel>>> {
     try {
       final publics = await _service.getPublicAvatars();
       final mine = await _service.getMyAvatars();
-      
-      // Combinamos ambos en una sola lista para el Lobby. 
-      // Los del usuario (mine) primero para que aparezcan arriba.
       state = AsyncValue.data([...mine, ...publics]);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
   }
 
-  /// Agregar un nuevo avatar al estado local (útil tras crear uno en el Editor)
-  void addAvatar(AvatarModel newAvatar) {
-    state.whenData((avatars) {
-      state = AsyncValue.data([newAvatar, ...avatars]);
-    });
+  Future<bool> upsertAvatar(AvatarModel avatar) async {
+    try {
+      final savedAvatar = await _service.saveAvatar(avatar);
+
+      state.whenData((currentAvatars) {
+        if (avatar.guid.isEmpty) {
+          state = AsyncValue.data([savedAvatar, ...currentAvatars]);
+        } else {
+          // CORRECCIÓN DE TIPO AQUÍ: Usamos .toList() explícito para evitar el error de dynamic
+          final updatedList = currentAvatars.map((a) {
+            return a.guid == savedAvatar.guid ? savedAvatar : a;
+          }).toList();
+          
+          state = AsyncValue.data(updatedList);
+        }
+      });
+      
+      return true;
+    } catch (e) {
+      print("Error en upsertAvatar: $e");
+      return false;
+    }
   }
 
   /// Elimina el avatar tanto en el backend como en el estado local
@@ -46,7 +60,6 @@ class AvatarNotifier extends StateNotifier<AsyncValue<List<AvatarModel>>> {
         state = AsyncValue.data(avatars.where((a) => a.guid != guid).toList());
       });
     } catch (e) {
-      // Aquí podrías lanzar una excepción para que la UI muestre un SnackBar
       rethrow;
     }
   }
@@ -54,15 +67,11 @@ class AvatarNotifier extends StateNotifier<AsyncValue<List<AvatarModel>>> {
 
 // --- DEFINICIÓN DE LOS PROVIDERS ---
 
-/// El Provider del servicio (ahora usa watch para mayor seguridad)
-/// Nota: Si ya lo definiste en el archivo del servicio, puedes borrarlo de aquí
-/// para evitar errores de "Duplicate definition".
 final roleplayServiceProvider = Provider<RoleplayService>((ref) {
   final apiClient = ref.watch(apiClientProvider); 
   return RoleplayService(apiClient);
 });
 
-/// El Provider que usaremos en la UI (Lobby, Editor, etc.)
 final avatarProvider = StateNotifierProvider<AvatarNotifier, AsyncValue<List<AvatarModel>>>((ref) {
   final service = ref.watch(roleplayServiceProvider);
   return AvatarNotifier(service);
