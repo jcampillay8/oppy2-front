@@ -23,7 +23,7 @@ class ApiClient {
       BaseOptions(
         baseUrl: ApiConfig.baseUrl,
         connectTimeout: const Duration(seconds: 15), // Subimos un poco por si el backend está frío
-        receiveTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 150),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

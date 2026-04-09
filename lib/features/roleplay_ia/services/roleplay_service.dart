@@ -22,15 +22,25 @@ class RoleplayService {
     } catch (e) { throw _handleError(e); }
   }
 
-  /// NUEVO MÉTODO: Guarda o actualiza el avatar en FastAPI
+  /// Busca un chat existente para el avatar o crea uno nuevo
+  Future<Map<String, dynamic>> getOrCreateChat(String avatarGuid) async {
+    try {
+      // Llamada al endpoint POST /chats/ que definimos en el backend
+      final response = await _apiClient.dio.post('/chats/', data: {
+        'avatar_definition_guid': avatarGuid,
+      });
+      return response.data; // Retorna el objeto Chat con su propio GUID
+    } catch (e) { 
+      throw _handleError(e); 
+    }
+  }
+
   Future<AvatarModel> saveAvatar(AvatarModel avatar) async {
     try {
       if (avatar.guid.isEmpty) {
-        // CREAR: POST /avatars/
         final response = await _apiClient.dio.post('/avatars/', data: avatar.toJson());
         return AvatarModel.fromJson(response.data);
       } else {
-        // ACTUALIZAR: PUT /avatars/{guid}
         final response = await _apiClient.dio.put('/avatars/${avatar.guid}', data: avatar.toJson());
         return AvatarModel.fromJson(response.data);
       }
@@ -43,19 +53,29 @@ class RoleplayService {
     } catch (e) { throw _handleError(e); }
   }
 
-  Future<Map<String, dynamic>> processChatStep({required String avatarGuid, required String message}) async {
+  /// PROCESAR MENSAJE: Ahora usa chatGuid para coincidir con el backend
+  Future<Map<String, dynamic>> processChatStep({
+    required String chatGuid, 
+    required String message
+  }) async {
     try {
-      final response = await _apiClient.dio.post('/chat/message', data: {
-        'avatar_guid': avatarGuid,
-        'content': message,
-        'type': 'text',
-      });
+      // Ajustado a la ruta dinámica: /chats/{chat_guid}/messages/
+      final response = await _apiClient.dio.post(
+        '/chats/$chatGuid/messages/', 
+        data: {
+          'content': message,
+        },
+      );
       return response.data;
-    } catch (e) { throw _handleError(e); }
+    } catch (e) { 
+      throw _handleError(e); 
+    }
   }
 
   dynamic _handleError(dynamic e) {
-    if (e is DioException) return e.response?.data['detail'] ?? "Error de servidor";
+    if (e is DioException) {
+      return e.response?.data['detail'] ?? "Error de servidor";
+    }
     return e.toString();
   }
 }

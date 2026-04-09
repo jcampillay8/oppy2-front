@@ -9,7 +9,6 @@ import '../widgets/feedback_panel.dart';
 
 class ChatViewScreen extends ConsumerStatefulWidget {
   final AvatarModel avatar;
-
   const ChatViewScreen({super.key, required this.avatar});
 
   @override
@@ -23,7 +22,6 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
   @override
   void initState() {
     super.initState();
-    // Iniciamos la sesión con el avatar seleccionado
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(chatSessionProvider.notifier).startSession(widget.avatar);
     });
@@ -42,6 +40,8 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(chatSessionProvider);
+    // Escuchamos el estado de escritura del bot
+    final isTyping = ref.watch(chatSessionProvider.notifier).isTyping;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -64,7 +64,6 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
       ),
       body: Column(
         children: [
-          // Área de mensajes
           Expanded(
             child: chatState.when(
               data: (messages) {
@@ -72,21 +71,54 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) => ChatBubble(message: messages[index]),
+                  itemCount: messages.length + (isTyping ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == messages.length) {
+                      return _buildTypingIndicator();
+                    }
+                    return ChatBubble(message: messages[index]);
+                  },
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(child: Text('Error: $err')),
+              error: (err, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center, // CORREGIDO AQUÍ
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.redAccent, size: 40),
+                    const SizedBox(height: 10),
+                    Text('Error: $err', style: const TextStyle(color: Colors.white70)),
+                  ],
+                ),
+              ),
             ),
           ),
-
-          // Panel de Feedback (Se activa cuando hay correcciones)
           const FeedbackPanel(),
-
-          // Input de texto y micrófono
           _buildInputArea(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTypingIndicator() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.cardGrey.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(15),
+        ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("${widget.avatar.name} is typing", 
+                style: const TextStyle(color: AppColors.textGrey, fontSize: 12, fontStyle: FontStyle.italic)),
+              const SizedBox(width: 10),
+              const _ThreeDotsAnimation(), // <--- Cambia el CircularProgressIndicator por esto
+            ],
+          ),
       ),
     );
   }
@@ -94,9 +126,9 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
   Widget _buildInputArea() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.cardGrey,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
         child: Row(
@@ -105,21 +137,12 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
               child: TextField(
                 controller: _textController,
                 style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: "Escribe en inglés...",
-                  hintStyle: const TextStyle(color: AppColors.textGrey),
+                  hintStyle: TextStyle(color: AppColors.textGrey),
                   border: InputBorder.none,
                 ),
                 onSubmitted: (val) => _sendMessage(),
-              ),
-            ),
-            // Botón de Micrófono (Para el JIT Practice)
-            GestureDetector(
-              onLongPressStart: (_) => _startRecording(),
-              onLongPressEnd: (_) => _stopRecording(),
-              child: CircleAvatar(
-                backgroundColor: AppColors.accentBlue,
-                child: const Icon(Icons.mic, color: Colors.white),
               ),
             ),
             IconButton(
@@ -138,36 +161,73 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
     _textController.clear();
   }
 
-  void _startRecording() {
-    // Lógica para grabar audio
-    debugPrint("Grabando...");
-  }
-
-  void _stopRecording() {
-    // Lógica para enviar audio al backend
-    debugPrint("Procesando audio...");
-  }
-
   void _showScenarioContext(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.cardGrey,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Contexto del Escenario", 
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 12),
-            Text(widget.avatar.context ?? "No hay contexto definido.", 
-              style: const TextStyle(color: AppColors.textGrey)),
-            const SizedBox(height: 20),
+            const Text("Contexto", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Text(widget.avatar.context ?? "", style: const TextStyle(color: AppColors.textGrey)),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Pequeña animación de 3 puntos que parpadean
+class _ThreeDotsAnimation extends StatefulWidget {
+  const _ThreeDotsAnimation();
+
+  @override
+  State<_ThreeDotsAnimation> createState() => _ThreeDotsAnimationState();
+}
+
+class _ThreeDotsAnimationState extends State<_ThreeDotsAnimation> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (index) {
+            double opacity = ( (_controller.value * 3) - index).clamp(0.2, 1.0);
+            return Container(
+              width: 4,
+              height: 4,
+              margin: const EdgeInsets.symmetric(horizontal: 1),
+              decoration: BoxDecoration(
+                color: AppColors.accentBlue.withOpacity(opacity),
+                shape: BoxShape.circle,
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }
