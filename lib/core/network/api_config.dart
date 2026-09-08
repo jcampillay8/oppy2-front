@@ -4,9 +4,13 @@ import 'package:flutter/foundation.dart';
 
 class ApiConfig {
   static String get baseUrl {
+    // 🌐 Permite inyectar la URL mediante --dart-define=API_BASE_URL=https://...
+    const envUrl = String.fromEnvironment('API_BASE_URL');
+    if (envUrl.isNotEmpty) return envUrl;
+
     // 🚀 DETECCIÓN AUTOMÁTICA DE AMBIENTE
     if (kReleaseMode) {
-      // Si compilas para el smartphone (APK Release), usa Railway
+      // Producción en Railway / Vercel / App
       return "https://oppy2-back-production.up.railway.app";
     }
 
