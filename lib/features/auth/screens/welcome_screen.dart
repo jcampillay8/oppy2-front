@@ -145,7 +145,7 @@ class WelcomeScreen extends StatelessWidget {
 }
 
 class _SocialIcon extends StatelessWidget {
-  final IconData icon;
+  final dynamic icon;
   const _SocialIcon({required this.icon});
 
   @override
