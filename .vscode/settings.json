@@ -1,0 +1,9 @@
+{
+  "java.import.exclusions": [
+    "**/build/**",
+    "**/.pub-cache/**",
+    "**/.plugin_symlinks/**",
+    "**/ephemeral/**",
+    "**/.dart_tool/**"
+  ]
+}

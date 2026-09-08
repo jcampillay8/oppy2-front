@@ -4,8 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/avatar_model.dart';
 import '../providers/chat_session_provider.dart';
+import '../services/roleplay_service.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/feedback_panel.dart';
+import 'package:record/record.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ChatViewScreen extends ConsumerStatefulWidget {
   final AvatarModel avatar;
@@ -18,6 +22,11 @@ class ChatViewScreen extends ConsumerStatefulWidget {
 class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _textController = TextEditingController();
+  
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isRecording = false;
+  int _lastMessageCount = 0;
 
   @override
   void initState() {
@@ -25,6 +34,13 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(chatSessionProvider.notifier).startSession(widget.avatar);
     });
+  }
+
+  @override
+  void dispose() {
+    _audioRecorder.dispose();
+    _audioPlayer.dispose();
+    super.dispose();
   }
 
   void _scrollToBottom() {
@@ -40,8 +56,20 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(chatSessionProvider);
-    // Escuchamos el estado de escritura del bot
     final isTyping = ref.watch(chatSessionProvider.notifier).isTyping;
+
+    ref.listen<AsyncValue<List<ChatMessage>>>(chatSessionProvider, (previous, next) {
+      if (next.hasValue && next.value != null) {
+        final messages = next.value!;
+        if (messages.length > _lastMessageCount) {
+          _lastMessageCount = messages.length;
+          final lastMessage = messages.last;
+          if (!lastMessage.isUser && widget.avatar.title == 'Simulador Entrevista BHP') {
+            _playTTS(lastMessage.text);
+          }
+        }
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -56,6 +84,14 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
           ],
         ),
         actions: [
+          if (widget.avatar.title == 'Simulador Entrevista BHP')
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                ref.read(chatSessionProvider.notifier).clearSession();
+                ref.read(chatSessionProvider.notifier).startSession(widget.avatar);
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () => _showScenarioContext(context),
@@ -133,12 +169,17 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
       child: SafeArea(
         child: Row(
           children: [
+            IconButton(
+              icon: Icon(_isRecording ? Icons.stop_circle : Icons.mic, 
+                color: _isRecording ? Colors.red : Colors.white),
+              onPressed: _toggleRecording,
+            ),
             Expanded(
               child: TextField(
                 controller: _textController,
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
-                  hintText: "Escribe en inglés...",
+                  hintText: "Escribe tu respuesta...",
                   hintStyle: TextStyle(color: AppColors.textGrey),
                   border: InputBorder.none,
                 ),
@@ -159,6 +200,44 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
     if (_textController.text.trim().isEmpty) return;
     ref.read(chatSessionProvider.notifier).sendTextMessage(_textController.text);
     _textController.clear();
+  }
+
+  Future<void> _playTTS(String text) async {
+    try {
+      final roleplayService = ref.read(roleplayServiceProvider);
+      final audioBytes = await roleplayService.textToSpeech(text);
+      await _audioPlayer.play(BytesSource(audioBytes));
+    } catch (e) {
+      print("TTS Error: \$e");
+    }
+  }
+
+  Future<void> _toggleRecording() async {
+    if (_isRecording) {
+      final path = await _audioRecorder.stop();
+      setState(() => _isRecording = false);
+      if (path != null) {
+        try {
+          final roleplayService = ref.read(roleplayServiceProvider);
+          final text = await roleplayService.speechToText(path);
+          if (text.isNotEmpty) {
+            _textController.text = text;
+            _sendMessage();
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("STT Error: \$e")));
+          }
+        }
+      }
+    } else {
+      if (await _audioRecorder.hasPermission()) {
+        final dir = await getTemporaryDirectory();
+        final path = '\${dir.path}/record.m4a';
+        await _audioRecorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+        setState(() => _isRecording = true);
+      }
+    }
   }
 
   void _showScenarioContext(BuildContext context) {

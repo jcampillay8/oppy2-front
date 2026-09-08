@@ -36,10 +36,14 @@ class AuthService {
   Future<Map<String, dynamic>?> checkNavigationFlow() async {
     try {
       final response = await _apiClient.dio.get('/onboarding/status');
-      return response.statusCode == 200 ? response.data : null;
-    } catch (e) {
-      _handleError(e);
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>?;
+      }
       return null;
+    } catch (e) {
+      // Si falla, asumimos que necesita onboarding
+      debugPrint("DEBUG: Error en /onboarding/status: $e");
+      return {'status': 'onboarding_needed'};
     }
   }
 

@@ -71,16 +71,16 @@ class WelcomeScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   const Text('OPPY CHAT', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white)),
                   Text(
-                    'MÁS QUE UN CHAT',
+                    'TU TUTOR',
                     style: TextStyle(fontSize: 28, color: Colors.blue.shade400, fontWeight: FontWeight.bold),
                   ),
                   const Text(
-                    'UNA OPORTUNIDAD',
+                    'DE IDIOMAS',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   const SizedBox(height: 15),
                   const Text(
-                    'Conversaciones en tiempo real, correcciones instantáneas y lecciones personalizadas.',
+                    'Mejora tu fluidez conversando con inteligencia artificial. Correcciones instantáneas y práctica real.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white70),
                   ),

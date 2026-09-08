@@ -1,5 +1,7 @@
 // lib/features/roleplay_ia/screens/avatar_editor_screen.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/avatar_model.dart';
@@ -117,6 +119,84 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
     }
   }
 
+  Future<void> _importFromJson() async {
+    try {
+      FilePickerResult? result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: true,
+      );
+
+      if (result != null && result.files.single.bytes != null) {
+        final String jsonString = utf8.decode(result.files.single.bytes!);
+        final Map<String, dynamic> data = jsonDecode(jsonString);
+        
+        // Extraer 'spec' para soportar chara_card_v2 u otros formatos genéricos
+        final String spec = data['spec'] ?? '';
+        
+        Map<String, dynamic> charData = data;
+        if (spec == 'chara_card_v2' && data['data'] != null) {
+          charData = data['data'];
+        }
+
+        // Título del escenario
+        String title = charData['name'] ?? charData['char_name'] ?? result.files.single.name.replaceAll('.json', '');
+        // Nombre de la IA
+        String name = charData['name'] ?? charData['char_name'] ?? 'Desconocido';
+        // Rol IA
+        String roleAvatar = charData['personality'] ?? charData['creator_notes'] ?? '';
+        
+        // Contexto: Un mega-prompt
+        List<String> promptParts = [];
+        if (charData['description'] != null && charData['description'].toString().isNotEmpty) {
+          promptParts.add(charData['description']);
+        }
+        if (charData['personality'] != null && charData['personality'].toString().isNotEmpty) {
+          promptParts.add("Personality: ${charData['personality']}");
+        }
+        if (charData['scenario'] != null && charData['scenario'].toString().isNotEmpty) {
+          promptParts.add("Scenario: ${charData['scenario']}");
+        }
+        if (charData['system_prompt'] != null && charData['system_prompt'].toString().isNotEmpty) {
+          promptParts.add("System Prompt: ${charData['system_prompt']}");
+        }
+        if (charData['mes_example'] != null && charData['mes_example'].toString().isNotEmpty) {
+          promptParts.add("Example dialogue:\n${charData['mes_example']}");
+        }
+
+        String contextPrompt = promptParts.join('\n\n');
+
+        // Actualizar UI
+        setState(() {
+          _titleController.text = title;
+          _nameController.text = name;
+          if (roleAvatar.isNotEmpty) _roleAvatarController.text = roleAvatar;
+          if (contextPrompt.isNotEmpty) _contextController.text = contextPrompt;
+          
+          // Extraer Tags si existen
+          if (charData['tags'] is List) {
+            _selectedTags = (charData['tags'] as List)
+                .map((e) => e.toString())
+                .take(3)
+                .toList();
+          }
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Personaje importado con éxito'), backgroundColor: AppColors.primaryBlue),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al importar JSON: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesProvider);
@@ -135,6 +215,11 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Importar JSON',
+            icon: const Icon(Icons.upload_file, color: AppColors.accentBlue),
+            onPressed: _isSaving ? null : _importFromJson,
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: TextButton(

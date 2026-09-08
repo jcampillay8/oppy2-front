@@ -36,7 +36,7 @@ class ChatBubble extends StatelessWidget {
             _buildMessageContent(context),
             
             // Lógica de Feedback/Sugerencia
-            if (message.feedback != null) ...[
+            if (_hasValidFeedback(message.feedback)) ...[
               const Divider(color: Colors.white24, height: 20),
               const Row(
                 children: [
@@ -81,10 +81,20 @@ class ChatBubble extends StatelessWidget {
     );
   }
 
+  bool _hasValidFeedback(dynamic feedback) {
+    if (feedback == null) return false;
+    if (feedback is String && feedback.isNotEmpty) return true;
+    if (feedback is Map<String, dynamic>) {
+      final diff = feedback['highlighted_diff'];
+      if (diff != null && diff is List && diff.isNotEmpty) return true;
+    }
+    return false;
+  }
+
   /// Procesa el feedback adaptándose al formato que envíe el backend
   Widget _parseFeedback(dynamic feedback) {
     // CASO 1: El feedback viene como un Map con la nueva estructura de diffs
-    if (feedback is Map<String, dynamic> && feedback.containsKey('highlighted_diff')) {
+    if (feedback is Map<String, dynamic> && feedback['highlighted_diff'] != null) {
       final List<dynamic> diffs = feedback['highlighted_diff'];
       List<TextSpan> spans = [];
 

@@ -65,8 +65,12 @@ class ChatSessionNotifier extends StateNotifier<AsyncValue<List<ChatMessage>>> {
         }).toList();
       } else {
         // 3. Si el chat es realmente nuevo y no tiene mensajes, ponemos el de bienvenida
+        String greeting = "Hi! I'm ${avatar.name}. ${avatar.title}. Let's start!";
+        if (avatar.title == 'Simulador Entrevista BHP') {
+          greeting = "¡Hola! Somos ${avatar.name}. Estamos listas para comenzar tu simulación de entrevista para BHP. ¿Empezamos?";
+        }
         loadedMessages.add(ChatMessage(
-          text: "Hi! I'm ${avatar.name}. ${avatar.title}. Let's start!",
+          text: greeting,
           isUser: false,
           timestamp: DateTime.now(),
         ));

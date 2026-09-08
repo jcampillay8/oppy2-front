@@ -4,23 +4,29 @@ import 'package:flutter/foundation.dart';
 
 class ApiConfig {
   static String get baseUrl {
+    // 🚀 DETECCIÓN AUTOMÁTICA DE AMBIENTE
+    if (kReleaseMode) {
+      // Si compilas para el smartphone (APK Release), usa Railway
+      return "https://oppy2-back-production.up.railway.app";
+    }
+
+    // 🛠️ AMBIENTE DE DESARROLLO (Debug mode)
     if (kIsWeb) return "http://localhost:8000";
     
-    // El emulador de Android necesita esta IP para ver tu localhost
     if (Platform.isAndroid) {
+      // El emulador de Android necesita esta IP para ver el localhost de tu PC
       return "http://10.0.2.2:8000";
     }
     
     return "http://localhost:8000";
   }
 
-  // --- Ajuste de Endpoints ---
-  // Quitamos "/auth" y agregamos el "/" al final para que coincida con tu prueba exitosa
+  // --- Endpoints ---
   static const String login = "/login/"; 
   static const String register = "/register"; 
   static const String googleMobileSignin = "/auth/google/mobile-signin";
 
-  /// Método para construir la URL completa
+  /// Método para construir la URL completa (mantenemos tu lógica de limpieza)
   static String getFullUrl(String endpoint) {
     final cleanBase = baseUrl.endsWith('/') 
         ? baseUrl.substring(0, baseUrl.length - 1) 

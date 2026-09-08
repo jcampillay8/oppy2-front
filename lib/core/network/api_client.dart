@@ -22,8 +22,8 @@ class ApiClient {
     dio = Dio(
       BaseOptions(
         baseUrl: ApiConfig.baseUrl,
-        connectTimeout: const Duration(seconds: 15), // Subimos un poco por si el backend está frío
-        receiveTimeout: const Duration(seconds: 150),
+        connectTimeout: const Duration(minutes: 5),
+        receiveTimeout: const Duration(minutes: 5),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -65,13 +65,18 @@ class ApiClient {
       ),
     );
 
-    // INTERCEPTOR DE LOGS (Para ver el body de lo que envías y recibes)
-    dio.interceptors.add(LogInterceptor(
-      requestHeader: true,
-      requestBody: true,
-      responseHeader: false,
-      responseBody: true,
-      error: true,
-    ));
+    // INTERCEPTOR DE LOGS (Solo en modo debug para evitar fuga de tokens)
+    assert(
+      () {
+        dio.interceptors.add(LogInterceptor(
+          requestHeader: true,
+          requestBody: true,
+          responseHeader: false,
+          responseBody: true,
+          error: true,
+        ));
+        return true;
+      }(),
+    );
   }
 }

@@ -1,6 +1,9 @@
 // lib/features/roleplay_ia/services/roleplay_service.dart
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../core/network/api_client.dart';
 import '../models/avatar_model.dart';
 
@@ -77,6 +80,32 @@ class RoleplayService {
       return e.response?.data['detail'] ?? "Error de servidor";
     }
     return e.toString();
+  }
+
+  // --- VOICE SERVICES ---
+  Future<String> speechToText(String filePath) async {
+    try {
+      final formData = FormData.fromMap({
+        'audio': await MultipartFile.fromFile(filePath, filename: 'audio.m4a'),
+      });
+      final response = await _apiClient.dio.post('/chats/stt', data: formData);
+      return response.data['text'] ?? '';
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Uint8List> textToSpeech(String text) async {
+    try {
+      final response = await _apiClient.dio.post(
+        '/chats/tts', 
+        data: {'text': text, 'lang': 'es'},
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return Uint8List.fromList(response.data);
+    } catch (e) {
+      throw _handleError(e);
+    }
   }
 }
 

@@ -1,7 +1,9 @@
 // lib/screens/confirm_email_screen.dart
 import 'package:flutter/material.dart';
-import 'package:oppy2_frontend/core/app_theme.dart';
-import 'package:oppy2_frontend/services/auth_service.dart';
+import 'package:oppy2_frontend/core/theme/app_theme.dart';
+import 'package:oppy2_frontend/features/auth/services/auth_service.dart';
+import 'package:oppy2_frontend/core/network/api_client.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ConfirmEmailScreen extends StatefulWidget {
   final String token;
@@ -23,7 +25,9 @@ class _ConfirmEmailScreenState extends State<ConfirmEmailScreen> {
 
   Future<void> _confirmAccount() async {
     // Aquí llamas a tu backend
-    final result = await AuthService().confirmEmail(widget.token);
+    final apiClient = ApiClient(const FlutterSecureStorage());
+    final service = AuthService(apiClient);
+    final result = await service.confirmEmail(widget.token);
     
     setState(() {
       _isLoading = false;

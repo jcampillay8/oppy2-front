@@ -16,137 +16,125 @@ class AvatarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     IconData scenarioIcon = _getIconForScenario(avatar.title);
+    Color brandColor = _getColorForString(avatar.name);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        padding: const EdgeInsets.all(20.0),
         decoration: BoxDecoration(
-          color: AppColors.cardGrey,
-          borderRadius: BorderRadius.circular(20),
+          color: const Color(0xFF1E1E2A), // Fondo oscuro elegante
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: avatar.isPublic 
-                ? AppColors.accentBlue.withOpacity(0.2) 
-                : Colors.purple.withOpacity(0.3),
+            color: Colors.white.withValues(alpha: 0.05),
+            width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            children: [
-              // --- 1. INDICADOR DE LIKES (Rating) ---
-              Positioned(
-                top: 10,
-                left: 10,
-                child: Container(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // --- HEADER: Avatar & Etiqueta ---
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: brandColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: brandColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Center(
+                    child: Icon(scenarioIcon, color: brandColor, size: 24),
+                  ),
+                ),
+                Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.black.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.favorite, color: Colors.redAccent, size: 12),
+                      Icon(
+                        avatar.isPublic ? Icons.public : Icons.lock_outline,
+                        size: 10,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
                       const SizedBox(width: 4),
                       Text(
-                        '${avatar.likesCount}', // Nuevo campo
-                        style: const TextStyle(
-                          color: Colors.white, 
-                          fontSize: 11, 
-                          fontWeight: FontWeight.bold
+                        avatar.isPublic ? 'Público' : 'Privado',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // --- BODY: Textos ---
+            Text(
+              avatar.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                letterSpacing: 0.2,
               ),
-
-              // --- 2. INDICADOR DE TIPO (Público vs Personal) ---
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Icon(
-                  avatar.isPublic ? Icons.verified : Icons.person_pin,
-                  size: 16,
-                  color: avatar.isPublic ? AppColors.accentBlue : Colors.purpleAccent,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              avatar.title,
+              style: TextStyle(
+                color: brandColor,
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            
+            const Spacer(),
+            
+            // --- FOOTER: Contexto ---
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                (avatar.context != null && avatar.context!.isNotEmpty)
+                    ? avatar.context!
+                    : "Sin descripción proporcionada para este personaje.",
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 12,
+                  height: 1.4,
                 ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
-              
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // --- 3. ETIQUETA DE CATEGORÍA ---
-                    if (avatar.scenarioCategory != null)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentBlue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          avatar.scenarioCategory!.toUpperCase(),
-                          style: const TextStyle(
-                            color: AppColors.accentBlue,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-
-                    // Círculo del Icono
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: const BoxDecoration(
-                        color: AppColors.backgroundDark,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        scenarioIcon,
-                        color: AppColors.accentBlue,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    // Título del Escenario
-                    Text(
-                      avatar.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    
-                    // Nombre del Personaje
-                    Text(
-                      "Con ${avatar.name}",
-                      style: const TextStyle(
-                        color: AppColors.textGrey,
-                        fontSize: 11,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -160,6 +148,22 @@ class AvatarCard extends StatelessWidget {
     if (t.contains('trabajo') || t.contains('entrevista') || t.contains('oficina')) return Icons.work;
     if (t.contains('médico') || t.contains('hospital') || t.contains('clínica')) return Icons.local_hospital;
     if (t.contains('tienda') || t.contains('comprar') || t.contains('mall')) return Icons.shopping_bag;
-    return Icons.chat_bubble_outline;
+    if (t.contains('fantasia') || t.contains('mago') || t.contains('dragón')) return Icons.auto_fix_high;
+    if (t.contains('sci-fi') || t.contains('robot') || t.contains('espacio')) return Icons.rocket_launch;
+    return Icons.person_outline;
+  }
+
+  Color _getColorForString(String text) {
+    final colors = [
+      const Color(0xFF8B5CF6), // Purple
+      const Color(0xFF3B82F6), // Blue
+      const Color(0xFF10B981), // Emerald
+      const Color(0xFFF59E0B), // Amber
+      const Color(0xFFEC4899), // Pink
+      const Color(0xFF06B6D4), // Cyan
+    ];
+    int hash = text.hashCode;
+    int index = (hash.abs()) % colors.length;
+    return colors[index];
   }
 }

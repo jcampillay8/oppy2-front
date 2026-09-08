@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart' as legacy;
 import 'package:app_links/app_links.dart';
 
@@ -15,33 +14,16 @@ import 'package:oppy2_frontend/features/auth/providers/auth_provider.dart';
 import 'package:oppy2_frontend/features/auth/services/auth_service.dart';
 import 'package:oppy2_frontend/features/auth/screens/welcome_screen.dart';
 
-// Importaciones de Features (Home)
-import 'package:oppy2_frontend/features/home/screens/home_screen.dart';
-import 'package:oppy2_frontend/features/onboarding/screens/onboarding_screen.dart';
-
-// Importaciones de Features (Test)
-import 'package:oppy2_frontend/features/placement_test/providers/writing_test_provider.dart'; 
-import 'package:oppy2_frontend/features/placement_test/screens/writing_test_screen.dart';
-import 'package:oppy2_frontend/features/placement_test/screens/language_selection_screen.dart';
-import 'package:oppy2_frontend/features/placement_test/screens/test_intro_screen.dart';
-import 'package:oppy2_frontend/features/placement_test/screens/reading_test_screen.dart';
-import 'package:oppy2_frontend/features/placement_test/screens/listening_test_screen.dart';
-import 'package:oppy2_frontend/features/placement_test/screens/speaking_test_screen.dart';
-import 'package:oppy2_frontend/features/placement_test/screens/analyzing_results_screen.dart';
-import 'package:oppy2_frontend/features/placement_test/screens/test_results_screen.dart';
-import 'package:oppy2_frontend/features/placement_test/services/placement_test_service.dart';
+// Importaciones Minimalistas (Profile & Tutor)
 import 'package:oppy2_frontend/features/profile/screens/profile_screen.dart';
-import 'package:oppy2_frontend/features/statistics/screens/statistics_screen.dart';
-import 'package:oppy2_frontend/features/lessons/screens/lessons_screen.dart';
-import 'package:oppy2_frontend/features/ranking/screens/ranking_screen.dart';
-
-import 'package:oppy2_frontend/features/roleplay_ia/screens/avatar_management_screen.dart';
-import 'package:oppy2_frontend/features/roleplay_ia/screens/roleplay_lobby_screen.dart';
-import 'package:oppy2_frontend/features/roleplay_ia/screens/avatar_editor_screen.dart';
-import 'package:oppy2_frontend/features/roleplay_ia/screens/active_sessions_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/main_menu_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/tutor_selection_screen.dart';
 import 'package:oppy2_frontend/features/roleplay_ia/screens/chat_view_screen.dart';
 import 'package:oppy2_frontend/features/roleplay_ia/models/avatar_model.dart';
-import 'package:oppy2_frontend/features/roleplay_ia/screens/all_scenarios_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/avatar_editor_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/vocabulary_practice_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/ielts_learning_path_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/ielts_listening_path_screen.dart';
 
 void main() {
   runApp(
@@ -56,16 +38,12 @@ class OppyAppWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final apiClient = ref.watch(apiClientProvider);
-    final authService = ref.watch(authServiceProvider); // ← agregar esto
+    final authService = ref.watch(authServiceProvider);
 
     return legacy.MultiProvider(
       providers: [
         legacy.ChangeNotifierProvider(
-          create: (_) => AuthProvider(authService), // ← pasar authService
-        ),
-        legacy.Provider<PlacementTestService>(
-          create: (_) => PlacementTestService(apiClient),
+          create: (_) => AuthProvider(authService),
         ),
       ],
       child: const OppyApp(),
@@ -73,13 +51,13 @@ class OppyAppWrapper extends ConsumerWidget {
   }
 }
 
-class OppyApp extends ConsumerStatefulWidget { // <--- Cambiar aquí
+class OppyApp extends ConsumerStatefulWidget {
   const OppyApp({super.key});
   @override
-  ConsumerState<OppyApp> createState() => _OppyAppState(); // <--- Cambiar aquí
+  ConsumerState<OppyApp> createState() => _OppyAppState();
 }
 
-class _OppyAppState extends ConsumerState<OppyApp> { // <--- Cambiar aquí
+class _OppyAppState extends ConsumerState<OppyApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   late AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
@@ -138,8 +116,7 @@ class _OppyAppState extends ConsumerState<OppyApp> { // <--- Cambiar aquí
     }
   }
 
-Future<void> _confirmAccount(String token) async {
-    // 🟢 USAMOS RIVERPOD AQUÍ TAMBIÉN
+  Future<void> _confirmAccount(String token) async {
     final authService = ref.read(authServiceProvider);
     final success = await authService.confirmEmail(token);
     if (success && mounted) {
@@ -155,87 +132,35 @@ Future<void> _confirmAccount(String token) async {
 
   @override
   Widget build(BuildContext context) {
-    // 🟢 ESTA ES LA INSTANCIA QUE MANDA
-    final authService = ref.watch(authServiceProvider);
-
     return MaterialApp(
       navigatorKey: _navigatorKey,
-      title: 'OppyChat',
+      title: 'OppyChat Tutor',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: legacy.Consumer<AuthProvider>(
         builder: (context, auth, _) {
-          if (auth.status != AuthStatus.authenticated) {
+          if (auth.status == AuthStatus.authenticated) {
+            return const MainMenuScreen();
+          } else {
             return const WelcomeScreen();
           }
-
-          return FutureBuilder<Map<String, dynamic>?>(
-            // Ahora checkNavigationFlow usa el MISMO ApiClient que el login
-            future: authService.checkNavigationFlow(), 
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  backgroundColor: Color(0xFF0F172A),
-                  body: Center(child: CircularProgressIndicator(color: Colors.blue)),
-                );
-              }
-
-                final data = snapshot.data ?? {};
-
-                final bool needsOnboarding = data['needs_onboarding'] ?? false;
-                final int currentStep = data['current_step'] ?? 1;
-                final String? targetLanguage = data['target_language'];
-
-                // Paso 1-3: completar perfil
-                if (needsOnboarding && currentStep <= 3) {
-                  return OnboardingScreen(initialStep: currentStep);
-                }
-
-                // Paso 4: elegir idioma
-                if (needsOnboarding && currentStep == 4) {
-                  return const LanguageSelectionScreen();
-                }
-
-                // Paso 5: test pendiente
-                if (needsOnboarding && currentStep == 5) {
-                  return const TestIntroScreen();
-                }
-
-                // Paso 6: todo completo
-                return const HomeScreen();
-            },
-          );
         },
       ),
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/onboarding': (context) => const OnboardingScreen(),
-        '/select-language': (context) => const LanguageSelectionScreen(), 
-        '/test-diagnostico': (context) => const TestIntroScreen(),      
-        '/writing-test': (context) => const WritingTestScreen(),
-        '/reading-test': (context) => const ReadingTestScreen(),
-        '/listening-test': (context) => const ListeningTestScreen(),
-        '/speaking-test': (context) => const SpeakingTestScreen(),
-        '/analyzing-test': (context) => const AnalyzingResultsScreen(),
-        '/test-results': (context) => const TestResultsScreen(),
-        '/profile': (context) => ProfileScreen(),
-        '/statistics': (context) => const StatisticsScreen(),
-        '/lessons': (context) => const LessonsScreen(),
-        '/rank': (context) => const RankingScreen(),
-        // --- RUTAS DE ROLEPLAY IA ---
-        '/roleplay-lobby': (context) => const RoleplayLobbyScreen(),
-        '/active-sessions': (context) => const ActiveSessionsScreen(),
+        '/home': (context) => const MainMenuScreen(),
+        '/tutor-selection': (context) => const TutorSelectionScreen(),
+        '/vocabulary-practice': (context) => const VocabularyPracticeScreen(),
+        '/ielts-path': (context) => const IeltsLearningPathScreen(),
+        '/ielts-listening-path': (context) => const IeltsListeningPathScreen(),
+        '/profile': (context) => const ProfileScreen(),
         '/avatar-editor': (context) => const AvatarEditorScreen(),
-        '/avatar-manager': (context) => const AvatarManagementScreen(),
-        '/all-scenarios': (context) => const AllScenariosScreen(),
         '/chat-view': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           if (args is AvatarModel) {
             return ChatViewScreen(avatar: args);
           }
-          // Retorno de emergencia por si algo sale mal con los argumentos
-          return const Scaffold(body: Center(child: Text("Error: Avatar no encontrado")));
+          return const Scaffold(body: Center(child: Text("Error: Tutor no encontrado")));
         },
       },
     );
