@@ -87,6 +87,15 @@ class IeltsPathService {
     }
   }
 
+  Future<SmartReviewSuggestionModel> getSmartReviewSuggestion() async {
+    try {
+      final response = await _apiClient.dio.get('/learning-analysis/ielts-path/smart-review/suggest');
+      return SmartReviewSuggestionModel.fromJson(response.data);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   dynamic _handleError(dynamic e) {
     if (e is DioException) {
       return e.response?.data['detail'] ?? "Error de servidor";

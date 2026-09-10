@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../features/auth/providers/auth_provider.dart';
 import '../../features/roleplay_ia/screens/tutor_selection_screen.dart';
 
 class MainDrawer extends StatelessWidget {
@@ -65,6 +67,18 @@ class MainDrawer extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (context) => const TutorSelectionScreen()),
               );
+            },
+          ),
+          const Divider(color: Colors.white12, height: 32),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.redAccent),
+            title: const Text('Cerrar sesión', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            onTap: () async {
+              Navigator.pop(context);
+              await context.read<AuthProvider>().logout();
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
+              }
             },
           ),
         ],

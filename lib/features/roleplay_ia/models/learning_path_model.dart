@@ -59,3 +59,35 @@ class UnitCompleteResponse {
     );
   }
 }
+
+class SmartReviewSuggestionModel {
+  final bool hasMasteredUnits;
+  final int? level;
+  final int? unit;
+  final String? unitTitle;
+  final double? precisionScore;
+  final int? daysSincePracticed;
+  final String? reasonText;
+
+  SmartReviewSuggestionModel({
+    required this.hasMasteredUnits,
+    this.level,
+    this.unit,
+    this.unitTitle,
+    this.precisionScore,
+    this.daysSincePracticed,
+    this.reasonText,
+  });
+
+  factory SmartReviewSuggestionModel.fromJson(Map<String, dynamic> json) {
+    return SmartReviewSuggestionModel(
+      hasMasteredUnits: json['has_mastered_units'] ?? false,
+      level: json['level'],
+      unit: json['unit'],
+      unitTitle: json['unit_title'],
+      precisionScore: json['precision_score'] != null ? (json['precision_score'] as num).toDouble() : null,
+      daysSincePracticed: json['days_since_practiced'],
+      reasonText: json['reason_text'],
+    );
+  }
+}

@@ -93,7 +93,7 @@ class _IeltsLearningPathScreenState extends ConsumerState<IeltsLearningPathScree
         ],
       ),
       body: stateAsync.when(
-        data: (data) => _buildBody(context, data.progress, data.syllabus),
+        data: (data) => _buildBody(context, data.progress, data.syllabus, data.smartReviewSuggestion),
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue)),
         error: (error, _) => Center(
           child: Text('Error: $error', style: const TextStyle(color: Colors.redAccent)),
@@ -102,7 +102,12 @@ class _IeltsLearningPathScreenState extends ConsumerState<IeltsLearningPathScree
     );
   }
 
-  Widget _buildBody(BuildContext context, List<LearningPathUnitProgress> progressList, Map<String, dynamic> syllabus) {
+  Widget _buildBody(
+    BuildContext context,
+    List<LearningPathUnitProgress> progressList,
+    Map<String, dynamic> syllabus,
+    SmartReviewSuggestionModel? smartReviewSuggestion,
+  ) {
     final levelKeys = syllabus.keys.map((k) => int.tryParse(k.toString()) ?? 0).where((k) => k > 0).toList()..sort();
 
     // Find current active level & unit (the first in_progress or unmastered)
@@ -130,9 +135,12 @@ class _IeltsLearningPathScreenState extends ConsumerState<IeltsLearningPathScree
         ListView.builder(
           controller: _scrollController,
           padding: const EdgeInsets.only(top: 16, bottom: 90, left: 16, right: 16),
-          itemCount: levelKeys.length,
+          itemCount: levelKeys.length + 1,
           itemBuilder: (context, index) {
-            final level = levelKeys[index];
+            if (index == 0) {
+              return _SmartReviewBanner(suggestion: smartReviewSuggestion);
+            }
+            final level = levelKeys[index - 1];
             _levelKeysMap.putIfAbsent(level, () => GlobalKey());
 
             final rawLevelData = syllabus[level.toString()];
@@ -455,6 +463,145 @@ class _IeltsUnitNode extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SmartReviewBanner extends StatelessWidget {
+  final SmartReviewSuggestionModel? suggestion;
+
+  const _SmartReviewBanner({this.suggestion});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSuggestion = suggestion != null && suggestion!.hasMasteredUnits;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF2E1A47),
+            Color(0xFF1E1E2C),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.5), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withValues(alpha: 0.1),
+            blurRadius: 10,
+            spreadRadius: 2,
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.bolt, color: Colors.amber, size: 22),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Repaso Inteligente",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "Algoritmo de Priorización (Tiempo × Debilidad)",
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                ),
+                child: const Text(
+                  "Sugerencia IA",
+                  style: TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (hasSuggestion) ...[
+            Text(
+              "Módulo ${suggestion!.level} · Unidad ${suggestion!.unit}: ${suggestion!.unitTitle}",
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              suggestion!.reasonText ?? '',
+              style: const TextStyle(
+                color: Colors.amberAccent,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => IeltsGuidedPracticeScreen(
+                        level: suggestion!.level!,
+                        unit: suggestion!.unit!,
+                        unitTitle: suggestion!.unitTitle ?? '',
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.replay, color: Colors.black, size: 18),
+                label: const Text(
+                  "Iniciar Repaso de esta Unidad",
+                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ] else ...[
+            const Text(
+              "Completa tu primera unidad para desbloquear las sugerencias personalizadas de repaso inteligente.",
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ],
+        ],
       ),
     );
   }

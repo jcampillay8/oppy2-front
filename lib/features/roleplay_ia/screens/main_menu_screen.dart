@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' as legacy;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/main_drawer.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class MainMenuScreen extends ConsumerWidget {
   const MainMenuScreen({super.key});
@@ -18,6 +20,38 @@ class MainMenuScreen extends ConsumerWidget {
           'OppyChat Tutor',
           style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20, color: Colors.white, letterSpacing: 0.5),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white70),
+            tooltip: 'Cerrar sesión',
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: const Color(0xFF1E1E2C),
+                  title: const Text('Cerrar sesión', style: TextStyle(color: Colors.white)),
+                  content: const Text('¿Estás seguro de que deseas salir?', style: TextStyle(color: Colors.white70)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Salir', style: TextStyle(color: Colors.redAccent)),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true && context.mounted) {
+                await legacy.Provider.of<AuthProvider>(context, listen: false).logout();
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
+                }
+              }
+            },
+          ),
+        ],
       ),
       drawer: const MainDrawer(),
       body: Center(
