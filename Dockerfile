@@ -24,9 +24,10 @@ RUN flutter pub get
 # Copiar el código fuente completo del frontend
 COPY . .
 
-# Compilar Flutter para Web en modo release con API_BASE_URL
+# Compilar Flutter para Web en modo release con API_BASE_URL y sin caché de PWA Service Worker
 ARG API_BASE_URL=https://oppy2-back-production.up.railway.app
-RUN flutter build web --release --dart-define=API_BASE_URL=${API_BASE_URL}
+RUN flutter build web --release --pwa-strategy=none --dart-define=API_BASE_URL=${API_BASE_URL}
+
 
 # 🚀 Stage 2: Servidor Web ultraligero con NGINX
 FROM nginx:alpine
