@@ -51,8 +51,8 @@ class IeltsActivityHeatmapSheet extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: const [
+              const Row(
+                children: [
                   Text("🔥", style: TextStyle(fontSize: 24)),
                   SizedBox(width: 8),
                   Text(
@@ -72,6 +72,7 @@ class IeltsActivityHeatmapSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
+
 
           // Stat Cards
           Row(
@@ -178,15 +179,17 @@ class IeltsActivityHeatmapSheet extends StatelessWidget {
   Widget _buildLegend() {
     return Row(
       children: [
-        const Text("Menos ", style: TextStyle(color: Colors.white38, fontSize: 10)),
+        const Text("0 ", style: TextStyle(color: Colors.white38, fontSize: 10)),
         _buildLegendBox(const Color(0xFF2A2A3D)),
         const SizedBox(width: 3),
-        _buildLegendBox(Colors.greenAccent.withValues(alpha: 0.35)),
+        _buildLegendBox(Colors.greenAccent.withValues(alpha: 0.25)),
         const SizedBox(width: 3),
-        _buildLegendBox(Colors.greenAccent.withValues(alpha: 0.70)),
+        _buildLegendBox(Colors.greenAccent.withValues(alpha: 0.50)),
+        const SizedBox(width: 3),
+        _buildLegendBox(Colors.greenAccent.withValues(alpha: 0.75)),
         const SizedBox(width: 3),
         _buildLegendBox(Colors.greenAccent),
-        const Text(" Más", style: TextStyle(color: Colors.white38, fontSize: 10)),
+        const Text(" 100+", style: TextStyle(color: Colors.white38, fontSize: 10)),
       ],
     );
   }
@@ -209,7 +212,7 @@ class IeltsActivityHeatmapSheet extends StatelessWidget {
     // Find the Monday of the current week (weekday: 1=Mon, ..., 7=Sun)
     final currentMonday = today.subtract(Duration(days: today.weekday - 1));
     
-    final int totalWeeks = 16;
+    const int totalWeeks = 16;
     final firstMonday = currentMonday.subtract(Duration(days: (totalWeeks - 1) * 7));
 
     final weekDayLabels = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -288,13 +291,18 @@ class IeltsActivityHeatmapSheet extends StatelessWidget {
 
                         Color cellColor;
                         if (isFuture) {
-                          cellColor = const Color(0xFF181824); // Subtle background for future days of current week
+                          cellColor = const Color(0xFF181824); // Background for future days
                         } else if (count == 0) {
                           cellColor = const Color(0xFF2A2A3D);
-                        } else if (count <= 4) {
-                          cellColor = Colors.greenAccent.withValues(alpha: 0.35);
-                        } else if (count <= 9) {
-                          cellColor = Colors.greenAccent.withValues(alpha: 0.70);
+                        } else if (count <= 15) {
+                          final double alpha = 0.20 + (count / 15.0) * 0.20;
+                          cellColor = Colors.greenAccent.withValues(alpha: alpha);
+                        } else if (count <= 40) {
+                          final double alpha = 0.40 + ((count - 15) / 25.0) * 0.25;
+                          cellColor = Colors.greenAccent.withValues(alpha: alpha);
+                        } else if (count <= 99) {
+                          final double alpha = 0.65 + ((count - 40) / 59.0) * 0.30;
+                          cellColor = Colors.greenAccent.withValues(alpha: alpha);
                         } else {
                           cellColor = Colors.greenAccent;
                         }
@@ -332,7 +340,7 @@ class IeltsActivityHeatmapSheet extends StatelessWidget {
                                 ? Text(
                                     "$count",
                                     style: TextStyle(
-                                      color: count > 9 ? Colors.black : Colors.white,
+                                      color: count >= 50 ? Colors.black : Colors.white,
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -351,4 +359,5 @@ class IeltsActivityHeatmapSheet extends StatelessWidget {
       ),
     );
   }
+
 }

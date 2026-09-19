@@ -499,7 +499,31 @@ class _VocabularyPracticeScreenState extends ConsumerState<VocabularyPracticeScr
             ),
           ],
             
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+          
+          // Score / Nivel Badge
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.star, color: Colors.amber, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    "Nivel de práctica: ${_wordData!['score'] ?? 3}",
+                    style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           
           // Palabra a traducir
           Text(
@@ -507,7 +531,7 @@ class _VocabularyPracticeScreenState extends ConsumerState<VocabularyPracticeScr
             style: const TextStyle(color: Colors.white54, fontSize: 16),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
             _isSpanishToEnglish ? _wordData!['spanish_word'] : _wordData!['english_word'],
             style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
@@ -585,6 +609,9 @@ class _VocabularyPracticeScreenState extends ConsumerState<VocabularyPracticeScr
     final bool isCorrect = _resultData!['is_correct'];
     final bool isMastered = _resultData!['is_mastered'];
     final String feedback = _resultData!['feedback'];
+    final int oldScore = _resultData!['old_score'] ?? _wordData!['score'] ?? 3;
+    final int newScore = _resultData!['new_score'] ?? 0;
+    final bool activityIncremented = _resultData!['activity_incremented'] ?? false;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -603,12 +630,53 @@ class _VocabularyPracticeScreenState extends ConsumerState<VocabularyPracticeScr
                 color: isCorrect ? Colors.green : Colors.redAccent,
                 size: 48,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(
                 feedback,
                 style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 12),
+              // Indicador de cambio de nivel / score
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black38,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  isMastered 
+                      ? "Nivel: $oldScore ➔ 0 (¡Dominada! 🏆)" 
+                      : "Nivel de práctica: $oldScore ➔ $newScore",
+                  style: TextStyle(
+                    color: isCorrect ? Colors.greenAccent : Colors.redAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              if (activityIncremented) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.orangeAccent.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orangeAccent),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("🔥", style: TextStyle(fontSize: 16)),
+                      SizedBox(width: 8),
+                      Text(
+                        "¡+1 ejercicio sumado a tu racha diaria!",
+                        style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               if (!isCorrect) ...[
                 const SizedBox(height: 16),
                 const Text("La respuesta correcta es:", style: TextStyle(color: Colors.white54)),
@@ -625,6 +693,7 @@ class _VocabularyPracticeScreenState extends ConsumerState<VocabularyPracticeScr
             ],
           ),
         ),
+
         
         const SizedBox(height: 32),
         

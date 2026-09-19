@@ -22,6 +22,8 @@ import 'package:oppy2_frontend/features/roleplay_ia/screens/chat_view_screen.dar
 import 'package:oppy2_frontend/features/roleplay_ia/models/avatar_model.dart';
 import 'package:oppy2_frontend/features/roleplay_ia/screens/avatar_editor_screen.dart';
 import 'package:oppy2_frontend/features/roleplay_ia/screens/vocabulary_practice_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/vocabulary_main_menu_screen.dart';
+import 'package:oppy2_frontend/features/roleplay_ia/screens/add_vocabulary_word_screen.dart';
 import 'package:oppy2_frontend/features/roleplay_ia/screens/ielts_learning_path_screen.dart';
 import 'package:oppy2_frontend/features/roleplay_ia/screens/ielts_listening_path_screen.dart';
 
@@ -150,7 +152,9 @@ class _OppyAppState extends ConsumerState<OppyApp> {
         '/welcome': (context) => const WelcomeScreen(),
         '/home': (context) => const MainMenuScreen(),
         '/tutor-selection': (context) => const TutorSelectionScreen(),
-        '/vocabulary-practice': (context) => const VocabularyPracticeScreen(),
+        '/vocabulary-practice': (context) => const VocabularyMainMenuScreen(),
+        '/vocabulary-exercise': (context) => const VocabularyPracticeScreen(),
+        '/add-vocabulary-word': (context) => const AddVocabularyWordScreen(),
         '/ielts-path': (context) => const IeltsLearningPathScreen(),
         '/ielts-listening-path': (context) => const IeltsListeningPathScreen(),
         '/profile': (context) => const ProfileScreen(),
