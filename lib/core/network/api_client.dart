@@ -57,10 +57,46 @@ class ApiClient {
           
           return handler.next(options);
         },
-        onError: (DioException e, handler) {
+        onError: (DioException e, handler) async {
           if (e.response?.statusCode == 401) {
             debugPrint("DEBUG: [401] No autorizado en ${e.requestOptions.path}");
           }
+
+          // REINTENTO AUTOMÁTICO PARA ERRORES DE RED / CONEXIÓN / XHR MICRO-CORTES
+          final isNetworkError = e.type == DioExceptionType.connectionError ||
+              e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.sendTimeout ||
+              e.type == DioExceptionType.receiveTimeout ||
+              (e.error != null && e.error.toString().contains('XMLHttpRequest'));
+
+          if (isNetworkError) {
+            final requestOptions = e.requestOptions;
+            final retryCount = (requestOptions.extra['retry_count'] as int? ?? 0);
+            const maxRetries = 3;
+
+            if (retryCount < maxRetries) {
+              final nextRetry = retryCount + 1;
+              requestOptions.extra['retry_count'] = nextRetry;
+
+              final delayMs = 1000 * nextRetry;
+              debugPrint(
+                "⚠️ Error de conexión/red en [${requestOptions.path}]. "
+                "Reintentando ($nextRetry/$maxRetries) en ${delayMs}ms...",
+              );
+
+              await Future.delayed(Duration(milliseconds: delayMs));
+
+              try {
+                final response = await dio.fetch(requestOptions);
+                return handler.resolve(response);
+              } on DioException catch (retryErr) {
+                return handler.next(retryErr);
+              } catch (_) {
+                return handler.next(e);
+              }
+            }
+          }
+
           return handler.next(e);
         },
       ),
