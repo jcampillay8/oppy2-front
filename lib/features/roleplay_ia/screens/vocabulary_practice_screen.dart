@@ -96,12 +96,20 @@ class _VocabularyPracticeScreenState extends ConsumerState<VocabularyPracticeScr
         setState(() => _isLoading = false);
         if (e.toString().contains('404')) {
           // No words to practice
+        } else if (e.toString().contains('401')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Colors.redAccent,
+              content: Text('Tu sesión ha expirado o no estás autenticado. Por favor inicia sesión.'),
+            ),
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
         }
       }
     }
   }
+
 
   Future<void> _handleTimeout() async {
     _textController.text = "_timeout_";
