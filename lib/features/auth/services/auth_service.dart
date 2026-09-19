@@ -149,15 +149,18 @@ class AuthService {
     }
   }
 
+  Future<String?> getToken() async {
+    return await _apiClient.storage.read(key: 'access_token');
+  }
+
   // --- LOGOUT ---
   Future<void> logout() async {
-    await _apiClient.storage.deleteAll();
-    // No necesitamos limpiar headers manualmente, el interceptor verá que no hay token
+    await _apiClient.storage.delete(key: 'access_token');
+    await _apiClient.storage.delete(key: 'refresh_token');
   }
 
   void _handleError(dynamic e) {
     if (e is DioException) {
-      debugPrint("--- Error Backend OppyChat ---");
       debugPrint("Status: ${e.response?.statusCode}");
       debugPrint("Data: ${e.response?.data}");
     } else {

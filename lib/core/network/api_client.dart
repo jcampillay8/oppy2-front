@@ -36,8 +36,9 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           // 1. Definir rutas que NO necesitan token
-          final publicPaths = ['/login', '/register', '/confirm-email'];
+          final publicPaths = ['/login', '/register', '/confirm-email', '/mobile-signin'];
           final isPublic = publicPaths.any((path) => options.path.contains(path));
+
 
           if (isPublic) {
             debugPrint("DEBUG: [${options.method}] Ruta pública: ${options.path}");

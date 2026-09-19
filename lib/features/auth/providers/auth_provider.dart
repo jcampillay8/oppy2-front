@@ -9,12 +9,29 @@ enum AuthStatus { authenticated, unauthenticated, authenticating, emailConfirmed
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService;
-  AuthProvider(this._authService);
+  AuthProvider(this._authService) {
+    checkAuthStatus();
+  }
+
+  Future<void> checkAuthStatus() async {
+    try {
+      final token = await _authService.getToken();
+      if (token != null && token.isNotEmpty) {
+        _status = AuthStatus.authenticated;
+      } else {
+        _status = AuthStatus.unauthenticated;
+      }
+    } catch (e) {
+      _status = AuthStatus.unauthenticated;
+    }
+    notifyListeners();
+  }
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     serverClientId: kIsWeb ? null : "234259540741-hv5m3meib6pav7qsufbb8lpku5eto7ft.apps.googleusercontent.com",
     scopes: ['email', 'profile'],
   );
+
 
   AuthStatus _status = AuthStatus.unauthenticated;
   UserModel? _user;
