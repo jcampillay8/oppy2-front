@@ -15,19 +15,21 @@ class VocabularyPracticeScreen extends ConsumerStatefulWidget {
 class _VocabularyPracticeScreenState extends ConsumerState<VocabularyPracticeScreen> {
   bool _isLoading = true;
   bool _isEvaluating = false;
+  bool _isOverriding = false;
+  bool _usedWildcard = false;
   Map<String, dynamic>? _wordData;
   Map<String, dynamic>? _resultData;
-  
+
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final FocusNode _nextButtonFocusNode = FocusNode();
   final FocusNode _keyboardFocusNode = FocusNode();
-  
+
   // Timer logic
   Timer? _timer;
   int _timeLeft = 15;
   static const int _maxTime = 15;
-  
+
   // Practice Direction logic: "BOTH" (50/50), "ES_TO_EN", "EN_TO_ES"
   String _practiceDirection = "BOTH";
   bool _isSpanishToEnglish = true;
@@ -41,13 +43,13 @@ class _VocabularyPracticeScreenState extends ConsumerState<VocabularyPracticeScr
   void _startTimer() {
     _timer?.cancel();
     setState(() => _timeLeft = _maxTime);
-    
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted || _resultData != null) {
         timer.cancel();
         return;
       }
-      
+
       setState(() {
         if (_timeLeft > 0) {
           _timeLeft--;
@@ -65,6 +67,8 @@ class _VocabularyPracticeScreenState extends ConsumerState<VocabularyPracticeScr
       _isLoading = true;
       _resultData = null;
       _wordData = null;
+      _isOverriding = false;
+      _usedWildcard = false;
       _textController.clear();
 
       if (_practiceDirection == "ES_TO_EN") {
@@ -146,6 +150,38 @@ class _VocabularyPracticeScreenState extends ConsumerState<VocabularyPracticeScr
       if (mounted) {
         setState(() => _isEvaluating = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al evaluar: $e')));
+      }
+    }
+  }
+
+  Future<void> _useWildcard() async {
+    if (_wordData == null || _isOverriding) return;
+
+    setState(() => _isOverriding = true);
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.dio.post(
+        '/learning-analysis/vocabulary/override',
+        data: {
+          "word_id": _wordData!['id'],
+          "user_answer": _textController.text,
+        },
+      );
+
+      if (mounted) {
+        setState(() {
+          _resultData = response.data;
+          _usedWildcard = true;
+          _isOverriding = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isOverriding = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al aplicar comodín: $e')),
+        );
       }
     }
   }
@@ -693,6 +729,29 @@ class _VocabularyPracticeScreenState extends ConsumerState<VocabularyPracticeScr
                   _isSpanishToEnglish ? _wordData!['english_word'] : _wordData!['spanish_word'],
                   style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                 ),
+                if (!_usedWildcard) ...[
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _isOverriding ? null : _useWildcard,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.amber, width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: Colors.amber.withValues(alpha: 0.1),
+                    ),
+                    icon: _isOverriding
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(color: Colors.amber, strokeWidth: 2),
+                          )
+                        : const Text("🛡️", style: TextStyle(fontSize: 16)),
+                    label: const Text(
+                      "Usar Comodín (Marcar como Correcto)",
+                      style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ),
+                ],
               ],
               if (isMastered) ...[
                 const SizedBox(height: 16),
