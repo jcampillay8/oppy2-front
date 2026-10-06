@@ -701,9 +701,39 @@ class _IeltsListeningPracticeScreenState extends ConsumerState<IeltsListeningPra
           const SizedBox(height: 20),
 
           // Campo de Transcripción
-          const Text(
-            "Escribe lo que escuchaste en inglés:",
-            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Escribe lo que escuchaste en inglés:",
+                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              ElevatedButton.icon(
+                onPressed: (_evaluationData != null || _isEvaluating) ? null : _toggleSTTRecording,
+                icon: _isTranscribingSTT
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Icon(
+                        _isRecordingSTT ? Icons.stop_circle : Icons.mic,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                label: Text(
+                  _isRecordingSTT
+                      ? "Detener Grabación"
+                      : (_isTranscribingSTT ? "Transcribiendo..." : "Dictar por Voz (STT)"),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isRecordingSTT ? Colors.redAccent : const Color(0xFF0EA5E9),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           if (_isRecordingSTT)
@@ -721,7 +751,7 @@ class _IeltsListeningPracticeScreenState extends ConsumerState<IeltsListeningPra
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      "Grabando tu voz en inglés... Presiona el botón rojo para finalizar.",
+                      "Grabando tu voz en inglés... Habla tu respuesta y presiona 'Detener Grabación'.",
                       style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -743,30 +773,6 @@ class _IeltsListeningPracticeScreenState extends ConsumerState<IeltsListeningPra
               filled: true,
               fillColor: const Color(0xFF2A2A3D),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              suffixIcon: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (_isTranscribingSTT)
-                      const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0EA5E9)),
-                      )
-                    else
-                      IconButton(
-                        tooltip: _isRecordingSTT ? "Detener y transcribir voz" : "Hablar en inglés (Speak to Text)",
-                        icon: Icon(
-                          _isRecordingSTT ? Icons.stop_circle : Icons.mic,
-                          color: _isRecordingSTT ? Colors.redAccent : const Color(0xFF38BDF8),
-                          size: 28,
-                        ),
-                        onPressed: (_evaluationData != null || _isEvaluating) ? null : _toggleSTTRecording,
-                      ),
-                  ],
-                ),
-              ),
             ),
           ),
           const SizedBox(height: 20),
