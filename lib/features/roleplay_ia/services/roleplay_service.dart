@@ -1,9 +1,7 @@
 // lib/features/roleplay_ia/services/roleplay_service.dart
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../../core/network/api_client.dart';
 import '../models/avatar_model.dart';
 
@@ -83,10 +81,11 @@ class RoleplayService {
   }
 
   // --- VOICE SERVICES ---
-  Future<String> speechToText(String filePath) async {
+  Future<String> speechToText(String filePath, {String lang = 'en-US'}) async {
     try {
       final formData = FormData.fromMap({
         'audio': await MultipartFile.fromFile(filePath, filename: 'audio.m4a'),
+        'lang': lang,
       });
       final response = await _apiClient.dio.post('/chats/stt', data: formData);
       return response.data['text'] ?? '';

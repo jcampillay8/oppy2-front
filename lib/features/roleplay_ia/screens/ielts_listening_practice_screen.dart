@@ -5,11 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:confetti/confetti.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/network/api_client.dart';
 import '../providers/ielts_path_provider.dart';
 import '../services/ielts_path_service.dart';
+import '../services/roleplay_service.dart';
 
 class IeltsListeningPracticeScreen extends ConsumerStatefulWidget {
   final int level;
@@ -42,6 +45,10 @@ class _IeltsListeningPracticeScreenState extends ConsumerState<IeltsListeningPra
 
   Map<String, dynamic>? _challengeData;
   Map<String, dynamic>? _evaluationData;
+
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  bool _isRecordingSTT = false;
+  bool _isTranscribingSTT = false;
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   final TextEditingController _textController = TextEditingController();
@@ -77,12 +84,63 @@ class _IeltsListeningPracticeScreenState extends ConsumerState<IeltsListeningPra
     _webAudioElement?.pause();
     _audioPlayer.stop();
     _audioPlayer.dispose();
+    _audioRecorder.dispose();
     _textController.dispose();
     _deeplSpanishController.dispose();
     _inputFocusNode.dispose();
     _nextButtonFocusNode.dispose();
     _confettiController.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleSTTRecording() async {
+    if (_isRecordingSTT) {
+      final path = await _audioRecorder.stop();
+      setState(() {
+        _isRecordingSTT = false;
+        _isTranscribingSTT = true;
+      });
+      if (path != null) {
+        try {
+          final roleplayService = ref.read(roleplayServiceProvider);
+          final text = await roleplayService.speechToText(path, lang: "en-US");
+          if (mounted && text.isNotEmpty) {
+            setState(() {
+              if (_textController.text.trim().isEmpty) {
+                _textController.text = text;
+              } else {
+                _textController.text = "${_textController.text} $text";
+              }
+            });
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Error al procesar voz: $e")),
+            );
+          }
+        } finally {
+          if (mounted) {
+            setState(() => _isTranscribingSTT = false);
+          }
+        }
+      } else {
+        if (mounted) setState(() => _isTranscribingSTT = false);
+      }
+    } else {
+      if (await _audioRecorder.hasPermission()) {
+        final dir = await getTemporaryDirectory();
+        final path = '${dir.path}/stt_ielts_listening_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        await _audioRecorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+        setState(() => _isRecordingSTT = true);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Permiso de micrófono denegado.")),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _loadChallenge() async {
@@ -648,6 +706,28 @@ class _IeltsListeningPracticeScreenState extends ConsumerState<IeltsListeningPra
             style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
+          if (_isRecordingSTT)
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.mic, color: Colors.redAccent, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Grabando tu voz en inglés... Presiona el botón rojo para finalizar.",
+                      style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           TextField(
             controller: _textController,
             focusNode: _inputFocusNode,
@@ -658,11 +738,35 @@ class _IeltsListeningPracticeScreenState extends ConsumerState<IeltsListeningPra
               if (_evaluationData == null) _evaluateTranscription();
             },
             decoration: InputDecoration(
-              hintText: "Escribe la oración exacta en inglés...",
+              hintText: "Escribe o dicta la oración en inglés...",
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
               filled: true,
               fillColor: const Color(0xFF2A2A3D),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              suffixIcon: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (_isTranscribingSTT)
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0EA5E9)),
+                      )
+                    else
+                      IconButton(
+                        tooltip: _isRecordingSTT ? "Detener y transcribir voz" : "Hablar en inglés (Speak to Text)",
+                        icon: Icon(
+                          _isRecordingSTT ? Icons.stop_circle : Icons.mic,
+                          color: _isRecordingSTT ? Colors.redAccent : const Color(0xFF38BDF8),
+                          size: 28,
+                        ),
+                        onPressed: (_evaluationData != null || _isEvaluating) ? null : _toggleSTTRecording,
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 20),
