@@ -7,6 +7,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:confetti/confetti.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/network/api_client.dart';
@@ -79,8 +80,11 @@ class _IeltsListeningPracticeScreenState extends ConsumerState<IeltsListeningPra
     _loadChallenge();
   }
 
+  html.SpeechRecognition? _webSpeechRecognition;
+
   @override
   void dispose() {
+    _webSpeechRecognition?.stop();
     _webAudioElement?.pause();
     _audioPlayer.stop();
     _audioPlayer.dispose();
@@ -94,6 +98,73 @@ class _IeltsListeningPracticeScreenState extends ConsumerState<IeltsListeningPra
   }
 
   Future<void> _toggleSTTRecording() async {
+    // 1. Web Native Speech API (Chrome / Brave / Edge)
+    if (kIsWeb && html.SpeechRecognition.supported) {
+      if (_isRecordingSTT) {
+        _webSpeechRecognition?.stop();
+        setState(() {
+          _isRecordingSTT = false;
+        });
+      } else {
+        try {
+          setState(() {
+            _isRecordingSTT = true;
+          });
+          _webSpeechRecognition = html.SpeechRecognition();
+          _webSpeechRecognition!.lang = 'en-US';
+          _webSpeechRecognition!.continuous = false;
+          _webSpeechRecognition!.interimResults = false;
+
+          _webSpeechRecognition!.onResult.listen((html.SpeechRecognitionEvent e) {
+            final results = e.results;
+            if (results != null && results.isNotEmpty) {
+              final res = results.last;
+              final item = res.item(0);
+              final transcript = item.transcript ?? '';
+              if (mounted && transcript.isNotEmpty) {
+                setState(() {
+                  if (_textController.text.trim().isEmpty) {
+                    _textController.text = transcript;
+                  } else {
+                    _textController.text = "${_textController.text} $transcript";
+                  }
+                });
+              }
+            }
+          });
+
+          _webSpeechRecognition!.onError.listen((e) {
+            debugPrint("Web Speech Error: $e");
+            if (mounted) {
+              setState(() {
+                _isRecordingSTT = false;
+                _isTranscribingSTT = false;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("No se pudo reconocer la voz o se canceló el permiso en el navegador.")),
+              );
+            }
+          });
+
+          _webSpeechRecognition!.onEnd.listen((_) {
+            if (mounted) {
+              setState(() {
+                _isRecordingSTT = false;
+                _isTranscribingSTT = false;
+              });
+            }
+          });
+
+          _webSpeechRecognition!.start();
+        } catch (e) {
+          debugPrint("Web Speech start error: $e");
+          if (mounted) setState(() => _isRecordingSTT = false);
+        }
+      }
+      return;
+    }
+
+    // 2. Fallback / Native Mobile (package:record + Backend STT)
     if (_isRecordingSTT) {
       final path = await _audioRecorder.stop();
       setState(() {
@@ -103,7 +174,17 @@ class _IeltsListeningPracticeScreenState extends ConsumerState<IeltsListeningPra
       if (path != null) {
         try {
           final roleplayService = ref.read(roleplayServiceProvider);
-          final text = await roleplayService.speechToText(path, lang: "en-US");
+          String text = "";
+          if (kIsWeb && path.startsWith('blob:')) {
+            final res = await Dio().get<List<int>>(path, options: Options(responseType: ResponseType.bytes));
+            if (res.data != null) {
+              final bytes = Uint8List.fromList(res.data!);
+              text = await roleplayService.speechToText(bytes: bytes, lang: "en-US");
+            }
+          } else {
+            text = await roleplayService.speechToText(filePath: path, lang: "en-US");
+          }
+
           if (mounted && text.isNotEmpty) {
             setState(() {
               if (_textController.text.trim().isEmpty) {
@@ -129,9 +210,13 @@ class _IeltsListeningPracticeScreenState extends ConsumerState<IeltsListeningPra
       }
     } else {
       if (await _audioRecorder.hasPermission()) {
-        final dir = await getTemporaryDirectory();
-        final path = '${dir.path}/stt_ielts_listening_${DateTime.now().millisecondsSinceEpoch}.m4a';
-        await _audioRecorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+        if (kIsWeb) {
+          await _audioRecorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: '');
+        } else {
+          final dir = await getTemporaryDirectory();
+          final path = '${dir.path}/stt_ielts_listening_${DateTime.now().millisecondsSinceEpoch}.m4a';
+          await _audioRecorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+        }
         setState(() => _isRecordingSTT = true);
       } else {
         if (mounted) {

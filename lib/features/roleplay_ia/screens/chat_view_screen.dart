@@ -219,7 +219,7 @@ class _ChatViewScreenState extends ConsumerState<ChatViewScreen> {
       if (path != null) {
         try {
           final roleplayService = ref.read(roleplayServiceProvider);
-          final text = await roleplayService.speechToText(path);
+          final text = await roleplayService.speechToText(filePath: path);
           if (text.isNotEmpty) {
             _textController.text = text;
             _sendMessage();

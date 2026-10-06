@@ -81,10 +81,19 @@ class RoleplayService {
   }
 
   // --- VOICE SERVICES ---
-  Future<String> speechToText(String filePath, {String lang = 'en-US'}) async {
+  Future<String> speechToText({String? filePath, Uint8List? bytes, String lang = 'en-US'}) async {
     try {
+      final MultipartFile file;
+      if (bytes != null) {
+        file = MultipartFile.fromBytes(bytes, filename: 'audio.m4a');
+      } else if (filePath != null) {
+        file = await MultipartFile.fromFile(filePath, filename: 'audio.m4a');
+      } else {
+        throw "No audio provided";
+      }
+
       final formData = FormData.fromMap({
-        'audio': await MultipartFile.fromFile(filePath, filename: 'audio.m4a'),
+        'audio': file,
         'lang': lang,
       });
       final response = await _apiClient.dio.post('/chats/stt', data: formData);
