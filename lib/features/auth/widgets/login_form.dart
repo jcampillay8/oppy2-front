@@ -30,6 +30,7 @@ class _LoginFormState extends State<LoginForm> {
 
     if (success && mounted) {
       Navigator.pop(context);
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
     } else if (mounted) {
       // Si el error es por cuenta no activa (is_active=false), el provider debería manejarlo,
       // pero aquí lanzamos un SnackBar de advertencia general.

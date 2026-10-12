@@ -23,6 +23,8 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
+    final authStatus = context.watch<AuthProvider>().status;
+    final isAuthenticating = authStatus == AuthStatus.authenticating;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -126,8 +128,31 @@ class WelcomeScreen extends StatelessWidget {
                       const _SocialIcon(icon: FontAwesomeIcons.apple),
                       const SizedBox(width: 20),
                       GestureDetector(
-                        onTap: () => context.read<AuthProvider>().loginWithGoogle(),
-                        child: const _SocialIcon(icon: FontAwesomeIcons.google),
+                        onTap: isAuthenticating
+                            ? null
+                            : () async {
+                                final authProvider = context.read<AuthProvider>();
+                                final success = await authProvider.loginWithGoogle();
+                                if (success && context.mounted) {
+                                  Navigator.pushNamedAndRemoveUntil(
+                                    context,
+                                    '/home',
+                                    (route) => false,
+                                  );
+                                } else if (context.mounted && authProvider.errorMessage != null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(authProvider.errorMessage!),
+                                      backgroundColor: Colors.redAccent,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              },
+                        child: _SocialIcon(
+                          icon: FontAwesomeIcons.google,
+                          isLoading: isAuthenticating,
+                        ),
                       ),
                       const SizedBox(width: 20),
                       const _SocialIcon(icon: FontAwesomeIcons.envelope),
@@ -146,7 +171,8 @@ class WelcomeScreen extends StatelessWidget {
 
 class _SocialIcon extends StatelessWidget {
   final dynamic icon;
-  const _SocialIcon({required this.icon});
+  final bool isLoading;
+  const _SocialIcon({required this.icon, this.isLoading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +183,16 @@ class _SocialIcon extends StatelessWidget {
         color: AppColors.outlineGrey.withOpacity(0.3),
         border: Border.all(color: AppColors.outlineGrey),
       ),
-      child: FaIcon(icon, color: Colors.white, size: 20),
+      child: isLoading
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            )
+          : FaIcon(icon, color: Colors.white, size: 20),
     );
   }
 }
