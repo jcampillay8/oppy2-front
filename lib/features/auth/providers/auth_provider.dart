@@ -88,6 +88,12 @@ class AuthProvider with ChangeNotifier {
         return false;
       }
 
+      if (googleUser.email.toLowerCase() != 'jcampillayworks@gmail.com') {
+        await _googleSignIn.signOut();
+        _setUnauthenticated("Acceso restringido. Cuenta no autorizada.");
+        return false;
+      }
+
       final googleAuth = await googleUser.authentication;
       String? tokenParaBackend = googleAuth.idToken ?? googleAuth.accessToken;
 

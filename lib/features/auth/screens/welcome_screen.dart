@@ -4,7 +4,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:oppy2_frontend/core/theme/app_theme.dart';
 import 'package:oppy2_frontend/features/auth/providers/auth_provider.dart';
-import 'package:oppy2_frontend/features/auth/widgets/register_form.dart'; 
 import 'package:oppy2_frontend/features/auth/widgets/login_form.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -88,75 +87,69 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 40),
                   
-                  // BOTÓN EMPEZAR (Muestra el RegisterForm con el SnackBar integrado)
+                  // BOTÓN INICIAR SESIÓN (PRINCIPAL)
                   SizedBox(
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton(
-                      onPressed: () => _showAuthModal(context, const RegisterForm()),
+                      onPressed: () => _showAuthModal(context, const LoginForm()),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryBlue,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                       ),
-                      child: const Text('Empezar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      child: const Text('Iniciar sesión', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(height: 15),
-                  
-                  // BOTÓN INICIAR SESIÓN
+
+                  // BOTÓN CONTINUAR CON GOOGLE
                   SizedBox(
                     width: double.infinity,
                     height: 55,
-                    child: OutlinedButton(
-                      onPressed: () => _showAuthModal(context, const LoginForm()),
+                    child: OutlinedButton.icon(
+                      onPressed: isAuthenticating
+                          ? null
+                          : () async {
+                              final authProvider = context.read<AuthProvider>();
+                              final success = await authProvider.loginWithGoogle();
+                              if (success && context.mounted) {
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  '/home',
+                                  (route) => false,
+                                );
+                              } else if (context.mounted && authProvider.errorMessage != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(authProvider.errorMessage!),
+                                    backgroundColor: Colors.redAccent,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            },
+                      icon: isAuthenticating
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const FaIcon(FontAwesomeIcons.google, color: Colors.white, size: 18),
+                      label: const Text('Continuar con Google', style: TextStyle(color: Colors.white, fontSize: 16)),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: AppColors.outlineGrey),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                       ),
-                      child: const Text('Iniciar sesión', style: TextStyle(color: Colors.white, fontSize: 18)),
                     ),
                   ),
-                  const SizedBox(height: 30),
-                  
-                  const Text('O CONTINÚA CON', style: TextStyle(fontSize: 12, letterSpacing: 2, color: Colors.white54)),
-                  const SizedBox(height: 20),
-                  
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const _SocialIcon(icon: FontAwesomeIcons.apple),
-                      const SizedBox(width: 20),
-                      GestureDetector(
-                        onTap: isAuthenticating
-                            ? null
-                            : () async {
-                                final authProvider = context.read<AuthProvider>();
-                                final success = await authProvider.loginWithGoogle();
-                                if (success && context.mounted) {
-                                  Navigator.pushNamedAndRemoveUntil(
-                                    context,
-                                    '/home',
-                                    (route) => false,
-                                  );
-                                } else if (context.mounted && authProvider.errorMessage != null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(authProvider.errorMessage!),
-                                      backgroundColor: Colors.redAccent,
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
-                              },
-                        child: _SocialIcon(
-                          icon: FontAwesomeIcons.google,
-                          isLoading: isAuthenticating,
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      const _SocialIcon(icon: FontAwesomeIcons.envelope),
-                    ],
+                  const SizedBox(height: 25),
+                  const Text(
+                    'ACCESO PRIVADO',
+                    style: TextStyle(fontSize: 12, letterSpacing: 2, color: Colors.white54),
                   ),
                   const SizedBox(height: 40),
                 ],
@@ -165,34 +158,6 @@ class WelcomeScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SocialIcon extends StatelessWidget {
-  final dynamic icon;
-  final bool isLoading;
-  const _SocialIcon({required this.icon, this.isLoading = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AppColors.outlineGrey.withOpacity(0.3),
-        border: Border.all(color: AppColors.outlineGrey),
-      ),
-      child: isLoading
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
-          : FaIcon(icon, color: Colors.white, size: 20),
     );
   }
 }
